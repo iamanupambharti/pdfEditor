@@ -40,6 +40,7 @@ interface SidebarProps {
   onDeleteAudioMemo: (memoId: string) => void;
   onAddTagToPage: (page: number, tag: string) => void;
   onUpdatePruneReason?: (page: number, reason: PruneReason) => void;
+  theme?: 'dark' | 'light';
 }
 
 const PRUNE_REASONS_LABELS: Record<PruneReason, string> = {
@@ -68,7 +69,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteAudioMemo,
   onAddTagToPage,
   onUpdatePruneReason,
+  theme = 'dark',
 }) => {
+  const isLight = theme === 'light';
   const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
@@ -175,9 +178,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className="w-72 bg-[#0A0D14] border-r border-white/[0.08] flex flex-col select-none z-30 h-full backdrop-blur-md">
+    <aside className={`w-72 border-r flex flex-col select-none z-30 h-full backdrop-blur-md transition-colors ${
+      isLight ? 'bg-[#F7F7F5] border-slate-200 text-slate-800' : 'bg-[#0A0D14] border-white/[0.08] text-slate-200'
+    }`}>
       {/* Sidebar Top Nav Tabs (§17.4) */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] px-2 py-2">
+      <div className={`flex items-center justify-between border-b px-2 py-2 ${
+        isLight ? 'border-slate-200' : 'border-white/[0.08]'
+      }`}>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onChangeTab('thumbnails')}
