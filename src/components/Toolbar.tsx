@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { ToolType, ShapeType, PaperTone } from '../types/document';
 import { 
   MousePointer, 
+  Hand,
   Pen, 
   Highlighter, 
   Eraser, 
@@ -15,6 +16,7 @@ import {
   Redo2, 
   ZoomIn, 
   ZoomOut, 
+  ChevronDown,
   Maximize2, 
   Bookmark, 
   Trash2, 
@@ -41,6 +43,7 @@ interface ToolbarProps {
   scale: number;
   onChangeScale: (scale: number) => void;
   onFitWidth: () => void;
+  onFitPage?: () => void;
   isZenMode: boolean;
   onToggleZenMode: () => void;
   isBookmarked: boolean;
@@ -89,6 +92,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   scale,
   onChangeScale,
   onFitWidth,
+  onFitPage,
   isZenMode,
   onToggleZenMode,
   isBookmarked,
@@ -102,6 +106,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   theme = 'dark',
 }) => {
   const isLight = theme === 'light';
+  const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
+  const zoomMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (zoomMenuRef.current && !zoomMenuRef.current.contains(e.target as Node)) {
+        setIsZoomMenuOpen(false);
+      }
+    };
+    if (isZoomMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isZoomMenuOpen]);
+
+  const zoomPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0];
 
   return (
     <div className={`flex items-center justify-between px-3 py-1.5 border-b backdrop-blur-md select-none shadow-xs transition-colors overflow-x-auto no-scrollbar gap-2 ${
@@ -198,6 +218,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           title="Pointer / Select (V)"
         >
           <MousePointer className="w-4 h-4" />
+        </button>
+
+        {/* Hand / Pan Tool */}
+        <button
+          onClick={() => onChangeTool('hand')}
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+            activeTool === 'hand'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+          }`}
+          title="Pan / Hand Tool (H or hold Space)"
+        >
+          <Hand className="w-4 h-4" />
         </button>
 
         {/* Pen */}
@@ -410,35 +443,113 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </div>
 
         {/* Zoom Controls */}
-        <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-lg border text-xs ${
-          isLight ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-[#11151F] border-white/[0.08] text-slate-200'
-        }`}>
-          <button
-            onClick={() => onChangeScale(Math.max(0.5, scale - 0.15))}
-            className={`p-0.5 transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500' : 'hover:text-white text-slate-400'}`}
-            title="Zoom Out (Ctrl -)"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <span className={`font-mono text-[11px] w-10 sm:w-12 text-center tabular-nums ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            onClick={() => onChangeScale(Math.min(3.0, scale + 0.15))}
-            className={`p-0.5 transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500' : 'hover:text-white text-slate-400'}`}
-            title="Zoom In (Ctrl +)"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onFitWidth}
-            className={`ml-0.5 sm:ml-1 text-[10px] px-1 py-0.5 rounded cursor-pointer ${
-              isLight ? 'text-slate-600 hover:text-indigo-600 hover:bg-slate-200' : 'text-slate-400 hover:text-indigo-400 hover:bg-white/[0.08]'
-            }`}
-            title="Fit Width (Ctrl 0)"
-          >
-            Fit
-          </button>
+        <div ref={zoomMenuRef} className="relative flex items-center">
+          <div className={`flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-1 rounded-lg border text-xs ${
+            isLight ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-[#11151F] border-white/[0.08] text-slate-200'
+          }`}>
+            <button
+              onClick={() => onChangeScale(Math.max(0.25, Math.round((scale - 0.15) * 100) / 100))}
+              className={`p-1 rounded transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500 hover:bg-slate-200/60' : 'hover:text-white text-slate-400 hover:bg-white/[0.06]'}`}
+              title="Zoom Out (Ctrl -)"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Interactive Zoom Dropdown Trigger */}
+            <button
+              onClick={() => setIsZoomMenuOpen((prev) => !prev)}
+              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded font-mono text-[11px] tabular-nums transition-colors cursor-pointer ${
+                isLight 
+                  ? 'hover:bg-slate-200/80 text-slate-800' 
+                  : 'hover:bg-white/[0.08] text-slate-200'
+              }`}
+              title="Select Zoom Preset (Ctrl + Mouse Wheel to zoom)"
+            >
+              <span>{Math.round(scale * 100)}%</span>
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+
+            <button
+              onClick={() => onChangeScale(Math.min(4.0, Math.round((scale + 0.15) * 100) / 100))}
+              className={`p-1 rounded transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500 hover:bg-slate-200/60' : 'hover:text-white text-slate-400 hover:bg-white/[0.06]'}`}
+              title="Zoom In (Ctrl +)"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            
+            <div className={`h-3.5 w-px mx-0.5 ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
+
+            <button
+              onClick={onFitWidth}
+              className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                isLight ? 'text-slate-600 hover:text-indigo-600 hover:bg-slate-200' : 'text-slate-400 hover:text-indigo-400 hover:bg-white/[0.08]'
+              }`}
+              title="Fit to Width (Ctrl 1)"
+            >
+              Fit
+            </button>
+          </div>
+
+          {/* Zoom Popover Dropdown */}
+          {isZoomMenuOpen && (
+            <div className={`absolute top-full right-0 mt-1.5 z-50 w-44 rounded-xl border p-1 shadow-2xl backdrop-blur-md text-xs transition-all animate-in fade-in zoom-in-95 ${
+              isLight
+                ? 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/60'
+                : 'bg-[#11151F]/95 border-white/10 text-slate-200 shadow-black/80'
+            }`}>
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Zoom Presets
+              </div>
+              {zoomPresets.map((preset) => {
+                const percent = Math.round(preset * 100);
+                const isSelected = Math.round(scale * 100) === percent;
+                return (
+                  <button
+                    key={preset}
+                    onClick={() => {
+                      onChangeScale(preset);
+                      setIsZoomMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? isLight ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'bg-indigo-600/20 text-indigo-400 font-semibold'
+                        : isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/[0.06] text-slate-300'
+                    }`}
+                  >
+                    <span>{percent}%</span>
+                    {preset === 1.0 && <span className="text-[10px] opacity-60">Actual</span>}
+                  </button>
+                );
+              })}
+              <div className={`my-1 h-px ${isLight ? 'bg-slate-200' : 'bg-white/10'}`} />
+              <button
+                onClick={() => {
+                  onFitWidth();
+                  setIsZoomMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                  isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/[0.06] text-slate-300'
+                }`}
+              >
+                <span>Fit to Width</span>
+                <span className="text-[10px] opacity-50 font-mono">Ctrl 1</span>
+              </button>
+              {onFitPage && (
+                <button
+                  onClick={() => {
+                    onFitPage();
+                    setIsZoomMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                    isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/[0.06] text-slate-300'
+                  }`}
+                >
+                  <span>Fit to Page</span>
+                  <span className="text-[10px] opacity-50 font-mono">Ctrl 2</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Zen Mode Button */}
