@@ -17,6 +17,7 @@ interface ExamBannerProps {
   onRestoreAllPruned: () => void;
   onOpenSnapshotModal: () => void;
   onOpenSidebarToTab: (tab: 'thumbnails' | 'excluded' | 'timeline') => void;
+  theme?: 'dark' | 'light';
 }
 
 export const ExamBanner: React.FC<ExamBannerProps> = ({
@@ -25,7 +26,9 @@ export const ExamBanner: React.FC<ExamBannerProps> = ({
   minutesSavedPerPage = 3,
   examDate,
   onBatchPrune,
+  theme = 'dark',
 }) => {
+  const isLight = theme === 'light';
   const [showRangeDialog, setShowRangeDialog] = useState(false);
   const [rangeStart, setRangeStart] = useState('1');
   const [rangeEnd, setRangeEnd] = useState('1');
@@ -67,7 +70,11 @@ export const ExamBanner: React.FC<ExamBannerProps> = ({
   };
 
   return (
-    <div className="bg-[#0A0D14] border-b border-white/[0.08] px-3.5 py-1.5 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2 shadow-sm">
+    <div className={`border-b px-3.5 py-1.5 flex flex-wrap items-center justify-between text-xs gap-2 shadow-xs transition-colors ${
+      isLight 
+        ? 'bg-[#F7F7F5] border-slate-200 text-slate-700' 
+        : 'bg-[#0A0D14] border-white/[0.08] text-slate-300'
+    }`}>
       {/* Mind Burden Relief Indicator (§17.2) */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5 font-semibold">
