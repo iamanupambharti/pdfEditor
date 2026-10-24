@@ -127,10 +127,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (isCollapsed) {
     return (
-      <div className="w-12 bg-[#0A0D14] border-r border-white/[0.08] flex flex-col items-center py-3 select-none z-30">
+      <div className={`w-12 border-r flex flex-col items-center py-3 select-none z-30 transition-colors ${
+        isLight ? 'bg-white border-slate-200' : 'bg-[#0A0D14] border-white/[0.08]'
+      }`}>
         <button
           onClick={() => setIsCollapsed(false)}
-          className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors mb-4"
+          className={`p-2 rounded-lg transition-colors mb-4 ${
+            isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-400 hover:text-white'
+          }`}
           title="Expand Sidebar (Ctrl+\)"
         >
           <ChevronRight className="w-4 h-4" />
@@ -139,35 +143,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex flex-col gap-2">
           <button
             onClick={() => { setIsCollapsed(false); onChangeTab('thumbnails'); }}
-            className={`p-2 rounded-lg transition-colors ${activeTab === 'thumbnails' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${
+              activeTab === 'thumbnails'
+                ? 'bg-indigo-600 text-white'
+                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
+            }`}
             title="Thumbnails"
           >
             <Layers className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setIsCollapsed(false); onChangeTab('excluded'); }}
-            className={`p-2 rounded-lg transition-colors ${activeTab === 'excluded' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${
+              activeTab === 'excluded'
+                ? 'bg-rose-600 text-white'
+                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
+            }`}
             title={`Safety Bin (${excludedPages.size} pruned)`}
           >
             <Trash2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setIsCollapsed(false); onChangeTab('timeline'); }}
-            className={`p-2 rounded-lg transition-colors ${activeTab === 'timeline' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${
+              activeTab === 'timeline'
+                ? 'bg-indigo-600 text-white'
+                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
+            }`}
             title="Version History & Snapshots"
           >
             <History className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setIsCollapsed(false); onChangeTab('audio'); }}
-            className={`p-2 rounded-lg transition-colors ${activeTab === 'audio' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${
+              activeTab === 'audio'
+                ? 'bg-rose-600 text-white'
+                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
+            }`}
             title="Voice Memos"
           >
             <Mic className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setIsCollapsed(false); onChangeTab('bookmarks'); }}
-            className={`p-2 rounded-lg transition-colors ${activeTab === 'bookmarks' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${
+              activeTab === 'bookmarks'
+                ? 'bg-amber-600 text-white'
+                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
+            }`}
             title="Bookmarks & Tags"
           >
             <Tag className="w-4 h-4" />
@@ -183,15 +207,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }`}>
       {/* Sidebar Top Nav Tabs (§17.4) */}
       <div className={`flex items-center justify-between border-b px-2 py-2 ${
-        isLight ? 'border-slate-200' : 'border-white/[0.08]'
+        isLight ? 'border-slate-200 bg-white/50' : 'border-white/[0.08]'
       }`}>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onChangeTab('thumbnails')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
               activeTab === 'thumbnails'
-                ? 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                ? isLight ? 'bg-white text-indigo-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
             title="Page Thumbnails"
           >
@@ -203,12 +227,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onChangeTab('excluded')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
               activeTab === 'excluded'
-                ? 'bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                ? isLight ? 'bg-rose-100 text-rose-700 font-semibold border border-rose-200' : 'bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/20'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
             title="Safety Bin (Pruned Pages)"
           >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <Trash2 className={`w-3.5 h-3.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
             <span className="text-[11px]">Bin ({excludedPages.size})</span>
           </button>
 
@@ -216,12 +240,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onChangeTab('timeline')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
               activeTab === 'timeline'
-                ? 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                ? isLight ? 'bg-white text-indigo-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
             title="Snapshots & Rollback"
           >
-            <History className="w-3.5 h-3.5 text-indigo-400" />
+            <History className={`w-3.5 h-3.5 ${isLight ? 'text-indigo-600' : 'text-indigo-400'}`} />
             <span className="text-[11px]">History</span>
           </button>
 
@@ -229,30 +253,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onChangeTab('audio')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
               activeTab === 'audio'
-                ? 'bg-[#171C29] text-rose-300 font-semibold shadow-inner'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                ? isLight ? 'bg-white text-rose-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-rose-300 font-semibold shadow-inner'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
             title="Voice Memos"
           >
-            <Mic className="w-3.5 h-3.5 text-rose-400" />
+            <Mic className={`w-3.5 h-3.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
           </button>
 
           <button
             onClick={() => onChangeTab('bookmarks')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
               activeTab === 'bookmarks'
-                ? 'bg-[#171C29] text-amber-300 font-semibold shadow-inner'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                ? isLight ? 'bg-white text-amber-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-amber-300 font-semibold shadow-inner'
+                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
             title="Bookmarks & Study Tags"
           >
-            <Tag className="w-3.5 h-3.5 text-amber-400" />
+            <Tag className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
           </button>
         </div>
 
         <button
           onClick={() => setIsCollapsed(true)}
-          className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-slate-300 transition-colors"
+          className={`p-1 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-500 hover:text-slate-300'}`}
           title="Collapse Sidebar (Ctrl+\)"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -262,7 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Tab 1: Thumbnails Grid */}
       {activeTab === 'thumbnails' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 mb-1">
+          <div className={`flex items-center justify-between text-[11px] px-1 mb-1 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
             <span>{numPages - excludedPages.size} of {numPages} Active Pages</span>
             <span>Click to Jump</span>
           </div>
@@ -280,14 +304,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onSelectPage(p)}
                   className={`group relative rounded-lg border overflow-hidden cursor-pointer transition-all ${
                     isCurrent
-                      ? 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg bg-[#11151F]'
+                      ? isLight ? 'border-indigo-600 ring-2 ring-indigo-500/30 shadow-md bg-white' : 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg bg-[#11151F]'
                       : isExcluded
-                      ? 'border-rose-900/40 opacity-45 bg-rose-950/20 hover:opacity-75'
-                      : 'border-white/10 hover:border-white/20 bg-[#11151F]/70'
+                      ? isLight ? 'border-rose-200 opacity-55 bg-rose-50 hover:opacity-80' : 'border-rose-900/40 opacity-45 bg-rose-950/20 hover:opacity-75'
+                      : isLight ? 'border-slate-200 hover:border-slate-300 bg-white shadow-xs' : 'border-white/10 hover:border-white/20 bg-[#11151F]/70'
                   }`}
                 >
                   {/* Thumbnail Image */}
-                  <div className="aspect-[3/4] bg-[#0A0D14] flex items-center justify-center overflow-hidden relative">
+                  <div className={`aspect-[3/4] flex items-center justify-center overflow-hidden relative ${
+                    isLight ? 'bg-slate-100' : 'bg-[#0A0D14]'
+                  }`}>
                     {thumbnails[p] ? (
                       <img
                         src={thumbnails[p]}
@@ -295,16 +321,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={`w-full h-full object-contain ${isExcluded ? 'grayscale' : ''}`}
                       />
                     ) : (
-                      <div className="text-slate-700 text-xs font-mono animate-pulse">
+                      <div className={`text-xs font-mono animate-pulse ${isLight ? 'text-slate-400' : 'text-slate-700'}`}>
                         Loading...
                       </div>
                     )}
 
                     {/* Excluded Overlay Badge */}
                     {isExcluded && (
-                      <div className="absolute inset-0 bg-rose-950/70 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
-                        <Trash2 className="w-5 h-5 text-rose-400 mb-1" />
-                        <span className="text-[10px] font-bold text-rose-300 uppercase tracking-wider">
+                      <div className={`absolute inset-0 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px] ${
+                        isLight ? 'bg-rose-50/80' : 'bg-rose-950/70'
+                      }`}>
+                        <Trash2 className={`w-5 h-5 mb-1 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-rose-700' : 'text-rose-300'}`}>
                           Pruned
                         </span>
                       </div>
@@ -339,13 +367,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
 
                   {/* Card Footer */}
-                  <div className="px-2 py-1 bg-[#0A0D14] flex items-center justify-between text-[11px]">
-                    <span className={`font-mono font-medium ${isCurrent ? 'text-indigo-400' : 'text-slate-400'}`}>
+                  <div className={`px-2 py-1 flex items-center justify-between text-[11px] ${
+                    isLight ? 'bg-slate-50 border-t border-slate-100' : 'bg-[#0A0D14]'
+                  }`}>
+                    <span className={`font-mono font-medium ${isCurrent ? 'text-indigo-600 font-semibold' : isLight ? 'text-slate-700' : 'text-slate-400'}`}>
                       p. {p}
                     </span>
 
                     {pageTags.length > 0 && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-mono">
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                        isLight ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
+                      }`}>
                         #{pageTags[0]}
                       </span>
                     )}
@@ -360,18 +392,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Tab 2: Safety Bin with Prune Reasons (§17.4 and §18.2 P2) */}
       {activeTab === 'excluded' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-900/30 text-rose-300 text-xs">
-            <div className="flex items-center gap-1.5 font-semibold text-rose-200 mb-1">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
+          <div className={`p-3 rounded-xl border text-xs ${
+            isLight
+              ? 'bg-rose-50/80 border-rose-200 text-rose-800'
+              : 'bg-rose-950/20 border-rose-900/30 text-rose-300'
+          }`}>
+            <div className={`flex items-center gap-1.5 font-semibold mb-1 ${isLight ? 'text-rose-900' : 'text-rose-200'}`}>
+              <ShieldAlert className={`w-4 h-4 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
               <span>Pruned Safety Bin</span>
             </div>
-            <p className="text-[11px] text-rose-300/80 leading-relaxed mb-2">
+            <p className={`text-[11px] leading-relaxed mb-2 ${isLight ? 'text-rose-700' : 'text-rose-300/80'}`}>
               Pruned pages are removed from your active study deck and clean exports, but are 100% safe here.
             </p>
             {excludedPages.size > 0 && (
               <button
                 onClick={onRestoreAllPruned}
-                className="w-full py-1.5 px-2 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 rounded-lg text-rose-100 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className={`w-full py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                  isLight
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 shadow-xs'
+                    : 'bg-rose-600/30 hover:bg-rose-600/50 border-rose-500/40 text-rose-100'
+                }`}
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Restore All {excludedPages.size} Pages
               </button>
@@ -379,10 +419,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {excludedPages.size === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-xs">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500/50 mx-auto mb-2" />
-              <p className="font-medium text-slate-400">Safety Bin Empty</p>
-              <p className="text-[11px] text-slate-600 mt-1">
+            <div className="text-center py-12 text-xs">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500/60 mx-auto mb-2" />
+              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>Safety Bin Empty</p>
+              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
                 No pages have been pruned yet. Press Delete on any page to cut clutter.
               </p>
             </div>
@@ -394,18 +434,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <div
                     key={p}
-                    className="p-2.5 rounded-xl bg-[#11151F] border border-white/10 text-xs space-y-2"
+                    className={`p-2.5 rounded-xl border text-xs space-y-2 ${
+                      isLight ? 'bg-white border-slate-200 text-slate-800 shadow-xs' : 'bg-[#11151F] border-white/10 text-slate-200'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded bg-[#171C29] flex items-center justify-center font-mono text-slate-300 text-[11px]">
+                        <span className={`w-6 h-6 rounded flex items-center justify-center font-mono text-[11px] ${
+                          isLight ? 'bg-slate-100 text-slate-700' : 'bg-[#171C29] text-slate-300'
+                        }`}>
                           {p}
                         </span>
-                        <span className="font-medium text-slate-200">Page {p}</span>
+                        <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>Page {p}</span>
                       </div>
                       <button
                         onClick={() => onToggleExcludePage(p)}
-                        className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 text-[11px] font-medium transition-colors cursor-pointer"
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
+                          isLight
+                            ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700'
+                            : 'bg-indigo-600/20 hover:bg-indigo-600/40 border-indigo-500/30 text-indigo-300'
+                        }`}
                       >
                         <RotateCcw className="w-3 h-3" /> Restore
                       </button>
@@ -413,12 +461,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Prune Reason Selector */}
                     {onUpdatePruneReason && (
-                      <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
-                        <span className="text-[10px] text-slate-400">Reason:</span>
+                      <div className={`flex items-center gap-1.5 pt-1 border-t ${isLight ? 'border-slate-100' : 'border-white/5'}`}>
+                        <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Reason:</span>
                         <select
                           value={currentReason}
                           onChange={(e) => onUpdatePruneReason(p, e.target.value as PruneReason)}
-                          className="bg-[#171C29] text-[10px] text-slate-300 border border-white/10 rounded px-1.5 py-0.5 outline-none focus:border-indigo-500"
+                          className={`text-[10px] rounded px-1.5 py-0.5 outline-none border focus:border-indigo-500 ${
+                            isLight
+                              ? 'bg-slate-50 text-slate-800 border-slate-200'
+                              : 'bg-[#171C29] text-slate-300 border-white/10'
+                          }`}
                         >
                           {Object.entries(PRUNE_REASONS_LABELS).map(([val, label]) => (
                             <option key={val} value={val}>{label}</option>
@@ -437,56 +489,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Tab 3: Version History & Snapshots (§17.4 & §17.7) */}
       {activeTab === 'timeline' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-            <span className="font-semibold text-slate-300">Timeline Snapshots</span>
+          <div className={`flex items-center justify-between text-xs px-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+            <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Timeline Snapshots</span>
             <span className="text-[11px]">{snapshots.length} saved</span>
           </div>
 
           {snapshots.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-xs">
-              <History className="w-8 h-8 text-indigo-500/40 mx-auto mb-2" />
-              <p className="font-medium text-slate-400">No Snapshots Yet</p>
-              <p className="text-[11px] text-slate-600 mt-1">
+            <div className="text-center py-12 text-xs">
+              <History className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-indigo-400' : 'text-indigo-500/40'}`} />
+              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>No Snapshots Yet</p>
+              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
                 Save a checkpoint before batch operations to revert anytime.
               </p>
             </div>
           ) : (
-            <div className="space-y-2.5 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
+            <div className={`space-y-2.5 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 ${
+              isLight ? 'before:bg-slate-200' : 'before:bg-white/10'
+            }`}>
               {snapshots.map((snap) => (
                 <div
                   key={snap.id}
                   className="relative pl-6 group text-xs"
                 >
-                  <div className="absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full bg-[#0A0D14] border-2 border-indigo-500 group-hover:scale-125 transition-transform" />
+                  <div className={`absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full border-2 border-indigo-500 group-hover:scale-125 transition-transform ${
+                    isLight ? 'bg-white' : 'bg-[#0A0D14]'
+                  }`} />
 
-                  <div className="p-2.5 rounded-xl bg-[#11151F] border border-white/10 hover:border-indigo-500/40 transition-colors">
+                  <div className={`p-2.5 rounded-xl border transition-colors ${
+                    isLight ? 'bg-white border-slate-200 hover:border-indigo-400 shadow-xs' : 'bg-[#11151F] border-white/10 hover:border-indigo-500/40'
+                  }`}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-slate-200">
+                        <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
                           {snap.name}
                         </span>
                         {snap.isAuto && (
-                          <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          <span className={`text-[9px] font-mono px-1 py-0.2 rounded border ${
+                            isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                          }`}>
                             Auto
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-500 font-mono">
+                      <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
                         {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
                     {snap.description && (
-                      <p className="text-[11px] text-slate-400 mb-2">
+                      <p className={`text-[11px] mb-2 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                         {snap.description}
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[10px] text-slate-500">
+                    <div className={`flex items-center justify-between pt-1 border-t text-[10px] ${
+                      isLight ? 'border-slate-100 text-slate-500' : 'border-white/10 text-slate-500'
+                    }`}>
                       <span>{snap.excludedPages.length} Pruned Pages</span>
                       <button
                         onClick={() => onRollbackSnapshot(snap.id)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-medium transition-colors cursor-pointer"
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          isLight ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700' : 'bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300'
+                        }`}
                       >
                         <RotateCcw className="w-2.5 h-2.5" /> Rollback
                       </button>
@@ -502,16 +566,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Tab 4: Audio Memos */}
       {activeTab === 'audio' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-            <span className="font-semibold text-slate-300">Voice Memos</span>
+          <div className={`flex items-center justify-between text-xs px-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+            <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Voice Memos</span>
             <span className="text-[11px]">{audioMemos.length} memos</span>
           </div>
 
           {audioMemos.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-xs">
-              <Mic className="w-8 h-8 text-rose-500/40 mx-auto mb-2" />
-              <p className="font-medium text-slate-400">No Voice Memos</p>
-              <p className="text-[11px] text-slate-600 mt-1">
+            <div className="text-center py-12 text-xs">
+              <Mic className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-rose-400' : 'text-rose-500/40'}`} />
+              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>No Voice Memos</p>
+              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
                 Click "Voice Memo" in the toolbar to record verbal notes for any page.
               </p>
             </div>
@@ -520,7 +584,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {audioMemos.map((memo) => (
                 <div
                   key={memo.id}
-                  className="p-2.5 rounded-xl bg-[#11151F] border border-white/10 flex items-center justify-between text-xs"
+                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                    isLight ? 'bg-white border-slate-200 text-slate-800 shadow-xs' : 'bg-[#11151F] border-white/10 text-slate-200'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <button
@@ -528,7 +594,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                         playingAudioId === memo.id
                           ? 'bg-rose-500 text-white animate-pulse'
-                          : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                          : isLight ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
                       }`}
                     >
                       {playingAudioId === memo.id ? (
@@ -539,10 +605,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </button>
 
                     <div>
-                      <div className="font-medium text-slate-200">
+                      <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
                         {memo.title || `Voice Note (Page ${memo.pageNumber})`}
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
+                      <div className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
                         Page {memo.pageNumber} • {memo.durationSeconds}s
                       </div>
                     </div>
@@ -551,14 +617,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onSelectPage(memo.pageNumber)}
-                      className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-slate-200"
+                      className={`p-1 rounded ${isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-400 hover:text-slate-200'}`}
                       title="Jump to Page"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => onDeleteAudioMemo(memo.id)}
-                      className="p-1 hover:bg-rose-500/20 rounded text-slate-500 hover:text-rose-400"
+                      className={`p-1 rounded ${isLight ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-600' : 'hover:bg-rose-500/20 text-slate-500 hover:text-rose-400'}`}
                       title="Delete Memo"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -575,18 +641,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {activeTab === 'bookmarks' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           <div>
-            <span className="text-xs font-semibold text-slate-300 block mb-2">
+            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
               Bookmarked Pages
             </span>
             {bookmarks.length === 0 ? (
-              <p className="text-[11px] text-slate-500 italic">No pages bookmarked yet.</p>
+              <p className={`text-[11px] italic ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>No pages bookmarked yet.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {bookmarks.map((p) => (
                   <button
                     key={p}
                     onClick={() => onSelectPage(p)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs hover:bg-amber-500/20 cursor-pointer"
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer border ${
+                      isLight
+                        ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                        : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                    }`}
                   >
                     <Bookmark className="w-3 h-3 fill-current" /> Page {p}
                   </button>
@@ -595,8 +665,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          <div className="border-t border-white/10 pt-3">
-            <span className="text-xs font-semibold text-slate-300 block mb-2">
+          <div className={`border-t pt-3 ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
+            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
               Add Tag to Page {currentPage}
             </span>
             <form onSubmit={handleCreateTag} className="flex gap-1.5 mb-3">
@@ -605,7 +675,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 placeholder="e.g. Formula, HighYield"
                 value={newTagInput}
                 onChange={(e) => setNewTagInput(e.target.value)}
-                className="flex-1 bg-[#11151F] border border-white/15 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                className={`flex-1 rounded-lg px-2.5 py-1 text-xs outline-none border focus:border-indigo-500 ${
+                  isLight
+                    ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-[#11151F] border-white/15 text-white placeholder-slate-500'
+                }`}
               />
               <button
                 type="submit"
@@ -615,7 +689,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </form>
 
-            <span className="text-xs font-semibold text-slate-300 block mb-2">
+            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
               All Study Tags
             </span>
             <div className="space-y-1.5">
@@ -625,10 +699,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div
                     key={`${pNum}-${t}`}
                     onClick={() => onSelectPage(pNum)}
-                    className="flex items-center justify-between p-1.5 rounded-lg bg-[#11151F] border border-white/10 text-xs hover:border-indigo-400 cursor-pointer"
+                    className={`flex items-center justify-between p-1.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                      isLight
+                        ? 'bg-white border-slate-200 hover:border-indigo-400 text-slate-800 shadow-xs'
+                        : 'bg-[#11151F] border-white/10 hover:border-indigo-400 text-slate-200'
+                    }`}
                   >
-                    <span className="text-indigo-400 font-mono">#{t}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">Page {pNum}</span>
+                    <span className="text-indigo-600 font-mono font-medium">#{t}</span>
+                    <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Page {pNum}</span>
                   </div>
                 ));
               })}
