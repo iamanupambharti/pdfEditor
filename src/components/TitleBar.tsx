@@ -77,7 +77,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     }`}>
       {/* Left: Brand Identity & Document Name */}
       <div className="flex items-center gap-3">
-        <BrandLogo size={24} />
+        <BrandLogo size={24} theme={theme} />
 
         <div className={`h-4 w-px ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
 
