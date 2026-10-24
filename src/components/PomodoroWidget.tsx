@@ -6,13 +6,16 @@ interface PomodoroWidgetProps {
   state: PomodoroState;
   onChangeState: React.Dispatch<React.SetStateAction<PomodoroState>>;
   onClose: () => void;
+  theme?: 'dark' | 'light';
 }
 
 export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
   state,
   onChangeState,
   onClose,
+  theme = 'dark',
 }) => {
+  const isLight = theme === 'light';
   const timerRef = useRef<any>(null);
 
   // Play soft chime notification tone using Web Audio API
@@ -81,42 +84,50 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
   };
 
   return (
-    <div className="fixed bottom-16 right-6 z-40 w-72 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-4 shadow-2xl backdrop-blur-md text-slate-200 select-none">
+    <div className={`fixed bottom-16 right-6 z-40 w-72 border rounded-2xl p-4 shadow-2xl backdrop-blur-md select-none transition-colors ${
+      isLight
+        ? 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/60'
+        : 'bg-slate-900/95 border-slate-700/80 text-slate-200'
+    }`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
-          <Sparkles className="w-4 h-4 text-amber-400" />
+        <div className={`flex items-center gap-1.5 text-xs font-semibold ${isLight ? 'text-amber-700' : 'text-amber-300'}`}>
+          <Sparkles className={`w-4 h-4 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
           <span>Study Pomodoro</span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200"
+          className={`p-1 rounded transition-colors cursor-pointer ${
+            isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+          }`}
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Mode Tabs */}
-      <div className="grid grid-cols-3 gap-1 bg-slate-950/80 p-1 rounded-xl mb-3 text-[10px]">
+      <div className={`grid grid-cols-3 gap-1 p-1 rounded-xl mb-3 text-[10px] ${
+        isLight ? 'bg-slate-100' : 'bg-slate-950/80'
+      }`}>
         <button
           onClick={() => handleSetMode('study')}
-          className={`py-1 rounded-lg font-medium transition-all ${
-            state.mode === 'study' ? 'bg-amber-500 text-slate-950 font-semibold shadow' : 'text-slate-400 hover:text-white'
+          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
+            state.mode === 'study' ? 'bg-amber-500 text-slate-950 font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
           }`}
         >
           25m Focus
         </button>
         <button
           onClick={() => handleSetMode('shortBreak')}
-          className={`py-1 rounded-lg font-medium transition-all ${
-            state.mode === 'shortBreak' ? 'bg-emerald-500 text-slate-950 font-semibold shadow' : 'text-slate-400 hover:text-white'
+          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
+            state.mode === 'shortBreak' ? 'bg-emerald-500 text-slate-950 font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
           }`}
         >
           5m Break
         </button>
         <button
           onClick={() => handleSetMode('longBreak')}
-          className={`py-1 rounded-lg font-medium transition-all ${
-            state.mode === 'longBreak' ? 'bg-indigo-500 text-slate-950 font-semibold shadow' : 'text-slate-400 hover:text-white'
+          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
+            state.mode === 'longBreak' ? 'bg-indigo-500 text-white font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
           }`}
         >
           15m Break
@@ -125,11 +136,11 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
 
       {/* Countdown Display */}
       <div className="text-center py-2">
-        <div className="font-mono text-3xl font-extrabold tracking-tight text-white mb-1">
+        <div className={`font-mono text-3xl font-extrabold tracking-tight mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
           {formatTime(state.timeLeft)}
         </div>
-        <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
-          <Coffee className="w-3.5 h-3.5 text-amber-400" />
+        <div className={`text-[11px] flex items-center justify-center gap-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          <Coffee className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
           <span>{state.sessionsCompleted} Focus Sessions Completed</span>
         </div>
       </div>
@@ -138,7 +149,7 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
       <div className="flex items-center justify-center gap-2 pt-2">
         <button
           onClick={() => onChangeState((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
-          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md ${
+          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer ${
             state.isRunning
               ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
               : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
@@ -150,7 +161,11 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
 
         <button
           onClick={() => handleSetMode(state.mode)}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+          className={`p-2 rounded-xl transition-colors cursor-pointer ${
+            isLight
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white'
+          }`}
           title="Reset Timer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
