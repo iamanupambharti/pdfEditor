@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Snapshot, AudioMemo, PruneReason } from '../types/document';
 import { 
   Layers, 
@@ -127,6 +127,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setSelectedPruned(new Set());
   };
 
+  const thumbnailsRef = useRef<Record<number, string>>({});
+  useEffect(() => {
+    thumbnailsRef.current = thumbnails;
+  }, [thumbnails]);
+
   // Generate thumbnails progressively
   useEffect(() => {
     if (!pdfDoc || numPages === 0) return;
@@ -135,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const generateAll = async () => {
       for (let p = 1; p <= numPages; p++) {
         if (!isMounted) break;
-        if (!thumbnails[p]) {
+        if (!thumbnailsRef.current[p]) {
           try {
             const dataUrl = await PDFService.renderThumbnail(pdfDoc, p, 130);
             if (isMounted) {
@@ -252,14 +257,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className={`w-72 border-r flex flex-col select-none z-30 h-full backdrop-blur-md transition-colors ${
+    <aside className={`w-80 border-r flex flex-col select-none z-30 h-full backdrop-blur-md transition-colors ${
       isLight ? 'bg-[#F7F7F5] border-slate-200 text-slate-800' : 'bg-[#0A0D14] border-white/[0.08] text-slate-200'
     }`}>
       {/* Sidebar Top Nav Tabs (§17.4) */}
-      <div className={`flex items-center justify-between border-b px-2 py-2 ${
+      <div className={`flex items-center justify-between border-b px-2.5 py-2 gap-1 ${
         isLight ? 'border-slate-200 bg-white/50' : 'border-white/[0.08]'
       }`}>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink min-w-0 pr-1">
           <button
             onClick={() => onChangeTab('thumbnails')}
             className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
@@ -326,7 +331,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => setIsCollapsed(true)}
-          className={`p-1 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-500 hover:text-slate-300'}`}
+          className={`p-1 rounded shrink-0 transition-colors cursor-pointer ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-500 hover:text-slate-300'}`}
           title="Collapse Sidebar (Ctrl+\)"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -597,7 +602,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}} // handled by parent onClick
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => handleToggleSelectPruned(p)}
                           className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
 
@@ -620,7 +626,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <span className={`font-semibold block ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
                             Page {p}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             Pruned from deck
                           </span>
                         </div>
