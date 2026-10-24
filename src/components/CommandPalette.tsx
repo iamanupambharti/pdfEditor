@@ -45,6 +45,7 @@ interface CommandPaletteProps {
   onChangePaperTone?: (tone: PaperTone) => void;
   isCurrentPageExcluded: boolean;
   currentPage: number;
+  theme?: 'dark' | 'light';
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -62,7 +63,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onChangePaperTone,
   isCurrentPageExcluded,
   currentPage,
+  theme = 'dark',
 }) => {
+  const isLight = theme === 'light';
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -228,16 +231,22 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/75 backdrop-blur-sm p-4 select-none"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm p-4 select-none"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-xl bg-[#11151F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-200"
+        className={`w-full max-w-xl border rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-colors ${
+          isLight
+            ? 'bg-white border-slate-200 text-slate-800 shadow-slate-300/60'
+            : 'bg-[#11151F] border-white/10 text-slate-200'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
-          <Search className="w-4 h-4 text-slate-400" />
+        <div className={`px-4 py-3 border-b flex items-center gap-3 ${
+          isLight ? 'bg-slate-50 border-slate-200' : 'border-white/10'
+        }`}>
+          <Search className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
           <input
             ref={inputRef}
             type="text"
@@ -248,9 +257,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-500 font-sans"
+            className={`flex-1 bg-transparent border-none outline-none text-sm font-sans ${
+              isLight ? 'text-slate-900 placeholder-slate-400' : 'text-white placeholder-slate-500'
+            }`}
           />
-          <kbd className="text-[10px] bg-[#0A0D14] px-2 py-0.5 rounded border border-white/10 text-slate-400 font-mono">
+          <kbd className={`text-[10px] px-2 py-0.5 rounded border font-mono ${
+            isLight ? 'bg-white border-slate-300 text-slate-600' : 'bg-[#0A0D14] border-white/10 text-slate-400'
+          }`}>
             ESC
           </kbd>
         </div>
@@ -258,7 +271,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
+            <div className={`text-center py-8 text-xs ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
               No matching commands found.
             </div>
           ) : (
@@ -273,16 +286,28 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs cursor-pointer transition-colors ${
-                    isSelected ? 'bg-indigo-600 text-white shadow-sm' : 'hover:bg-white/[0.04] text-slate-300'
+                    isSelected 
+                      ? 'bg-indigo-600 text-white shadow-sm' 
+                      : isLight 
+                      ? 'hover:bg-slate-100 text-slate-700' 
+                      : 'hover:bg-white/[0.04] text-slate-300'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/10' : 'bg-[#171C29] text-slate-300'}`}>
+                    <div className={`p-1.5 rounded-lg ${
+                      isSelected 
+                        ? 'bg-white/15' 
+                        : isLight 
+                        ? 'bg-slate-100 text-slate-700' 
+                        : 'bg-[#171C29] text-slate-300'
+                    }`}>
                       {cmd.icon}
                     </div>
                     <div>
                       <span className="font-medium">{cmd.title}</span>
-                      <span className={`text-[10px] ml-2 ${isSelected ? 'text-indigo-200' : 'text-slate-500'}`}>
+                      <span className={`text-[10px] ml-2 ${
+                        isSelected ? 'text-indigo-200' : isLight ? 'text-slate-500' : 'text-slate-500'
+                      }`}>
                         {cmd.category}
                       </span>
                     </div>
@@ -290,7 +315,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
                   {cmd.shortcut && (
                     <kbd className={`text-[10px] px-1.5 py-0.5 rounded font-mono border ${
-                      isSelected ? 'bg-indigo-700/80 border-indigo-400/40 text-white' : 'bg-[#0A0D14] border-white/10 text-slate-400'
+                      isSelected 
+                        ? 'bg-indigo-700/80 border-indigo-400/40 text-white' 
+                        : isLight 
+                        ? 'bg-slate-100 border-slate-300 text-slate-600' 
+                        : 'bg-[#0A0D14] border-white/10 text-slate-400'
                     }`}>
                       {cmd.shortcut}
                     </kbd>
