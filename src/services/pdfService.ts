@@ -8,6 +8,8 @@ if (typeof window !== 'undefined') {
 export interface RenderPageResult {
   width: number;
   height: number;
+  unscaledWidth: number;
+  unscaledHeight: number;
   viewport: pdfjsLib.PageViewport;
 }
 
@@ -81,8 +83,19 @@ export class PDFService {
     return {
       width: viewport.width,
       height: viewport.height,
+      unscaledWidth: viewport.width / scale,
+      unscaledHeight: viewport.height / scale,
       viewport,
     };
+  }
+
+  public static async getPageDimensions(
+    pdfDoc: pdfjsLib.PDFDocumentProxy,
+    pageNumber: number
+  ): Promise<{ width: number; height: number }> {
+    const page = await pdfDoc.getPage(pageNumber);
+    const viewport = page.getViewport({ scale: 1.0 });
+    return { width: viewport.width, height: viewport.height };
   }
 
   public static async renderThumbnail(
