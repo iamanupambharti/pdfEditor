@@ -252,7 +252,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
   // POINTER DOWN: Start live drawing
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'select') return;
+    if (activeTool === 'select' || activeTool === 'hand' || e.button === 1) return;
     // Capture pointer events to ensure live smooth strokes even if mouse moves fast
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -474,9 +474,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
   return (
     <div 
-      className="absolute inset-0 pointer-events-auto touch-none select-none"
+      className="absolute inset-0 touch-none select-none"
       style={{
+        pointerEvents: activeTool === 'hand' ? 'none' : 'auto',
         cursor: 
+          activeTool === 'hand' ? 'grab' :
           activeTool === 'select' ? 'default' :
           activeTool === 'eraser' ? 'crosshair' :
           activeTool === 'text' ? 'text' : 'crosshair'
