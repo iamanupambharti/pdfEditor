@@ -57,6 +57,25 @@ export function App() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
 
+  // Computed list of non-pruned, active pages in sequential order
+  const activePages = React.useMemo(() => {
+    const list: number[] = [];
+    for (let i = 1; i <= numPages; i++) {
+      if (!excludedPages.has(i)) {
+        list.push(i);
+      }
+    }
+    return list;
+  }, [numPages, excludedPages]);
+
+  // Auto-snap currentPage to an active page if current page becomes excluded
+  useEffect(() => {
+    if (activePages.length > 0 && excludedPages.has(currentPage)) {
+      const nextActive = activePages.find((p) => p > currentPage) || activePages[0];
+      setCurrentPage(nextActive);
+    }
+  }, [activePages, excludedPages, currentPage]);
+
   // Sync theme with document attributes (§4.1)
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', appTheme);
@@ -261,14 +280,42 @@ export function App() {
     await loadPdfData(sampleBuffer, 'CS_Exam_Revision_Deck.pdf');
   };
 
-  // Toggle page exclusion (Pruning)
+  // Toggle page exclusion (Pruning) with auto-advancing to next active page
   const handleToggleExcludePage = (pageNumber: number) => {
     setExcludedPages((prev) => {
       const next = new Set(prev);
-      if (next.has(pageNumber)) {
+      const isCurrentlyExcluded = next.has(pageNumber);
+      if (isCurrentlyExcluded) {
         next.delete(pageNumber);
       } else {
         next.add(pageNumber);
+      }
+      pushHistory(next);
+
+      // If we pruned the currently viewed page, remove it from eyes and advance to nearest active page!
+      if (!isCurrentlyExcluded && pageNumber === currentPage) {
+        const remaining: number[] = [];
+        for (let i = 1; i <= numPages; i++) {
+          if (!next.has(i)) remaining.push(i);
+        }
+        if (remaining.length > 0) {
+          const nextActive = remaining.find((p) => p > pageNumber);
+          setCurrentPage(nextActive || remaining[remaining.length - 1]);
+        }
+      }
+
+      return next;
+    });
+  };
+
+  // Restore batch of pruned pages
+  const handleRestoreBatch = (pagesToRestore: number[]) => {
+    if (pagesToRestore.length === 0) return;
+    pushAutoSnapshot(`Restore ${pagesToRestore.length} Pruned Pages`);
+    setExcludedPages((prev) => {
+      const next = new Set(prev);
+      for (const p of pagesToRestore) {
+        next.delete(p);
       }
       pushHistory(next);
       return next;
@@ -389,9 +436,35 @@ export function App() {
     setHasUnsavedChanges(true);
   };
 
-  // Fit width
-  const handleFitWidth = () => {
-    setScale(1.35);
+  // Dynamic Fit Width
+  const handleFitWidth = async () => {
+    if (!pdfDoc) return;
+    try {
+      const dims = await PDFService.getPageDimensions(pdfDoc, currentPage);
+      const sidebarWidth = isZenMode ? 0 : 320;
+      const availableWidth = window.innerWidth - sidebarWidth - 80;
+      const fit = Math.max(0.25, Math.min(4.0, Number((availableWidth / dims.width).toFixed(2))));
+      setScale(fit);
+    } catch {
+      setScale(1.25);
+    }
+  };
+
+  // Dynamic Fit Page
+  const handleFitPage = async () => {
+    if (!pdfDoc) return;
+    try {
+      const dims = await PDFService.getPageDimensions(pdfDoc, currentPage);
+      const sidebarWidth = isZenMode ? 0 : 320;
+      const availableWidth = window.innerWidth - sidebarWidth - 80;
+      const availableHeight = window.innerHeight - 150;
+      const scaleW = availableWidth / dims.width;
+      const scaleH = availableHeight / dims.height;
+      const fit = Math.max(0.25, Math.min(4.0, Number(Math.min(scaleW, scaleH).toFixed(2))));
+      setScale(fit);
+    } catch {
+      setScale(1.0);
+    }
   };
 
   // Export clean PDF
@@ -534,11 +607,28 @@ export function App() {
       } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         setShowSnapshotModal(true);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        setScale((prev) => Math.min(4.0, Math.round((prev + 0.15) * 100) / 100));
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
+        e.preventDefault();
+        setScale((prev) => Math.max(0.25, Math.round((prev - 0.15) * 100) / 100));
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        setScale(1.0);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+        e.preventDefault();
+        handleFitWidth();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+        e.preventDefault();
+        handleFitPage();
       } else if (e.key === 'Delete') {
         handleToggleExcludePage(currentPage);
       } else if (e.key.toLowerCase() === 'p') {
         setActiveTool('pen');
       } else if (e.key.toLowerCase() === 'h') {
+        setActiveTool('hand');
+      } else if (e.key.toLowerCase() === 'y') {
         setActiveTool('highlighter');
       } else if (e.key.toLowerCase() === 'e') {
         setActiveTool('eraser');
@@ -561,7 +651,17 @@ export function App() {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [currentPage, handleUndo, handleRedo, isZenMode]);
+  }, [
+    currentPage, 
+    handleUndo, 
+    handleRedo, 
+    isZenMode, 
+    handleFitWidth, 
+    handleFitPage, 
+    handleToggleExcludePage, 
+    handleToggleBookmark, 
+    handleOpenFile
+  ]);
 
   // Load sample on first run if no document
   useEffect(() => {
@@ -641,6 +741,7 @@ export function App() {
           scale={scale}
           onChangeScale={setScale}
           onFitWidth={handleFitWidth}
+          onFitPage={handleFitPage}
           isZenMode={isZenMode}
           onToggleZenMode={() => setIsZenMode(true)}
           isBookmarked={isBookmarked}
@@ -679,6 +780,7 @@ export function App() {
             numPages={numPages}
             currentPage={currentPage}
             excludedPages={excludedPages}
+            activePages={activePages}
             bookmarks={bookmarks}
             tags={tags}
             audioMemos={audioMemos}
@@ -689,6 +791,7 @@ export function App() {
             onSelectPage={setCurrentPage}
             onToggleExcludePage={handleToggleExcludePage}
             onRestoreAllPruned={handleRestoreAllPruned}
+            onRestoreBatch={handleRestoreBatch}
             onRollbackSnapshot={handleRollbackSnapshot}
             onDeleteAudioMemo={handleDeleteAudioMemo}
             onAddTagToPage={handleAddTagToPage}
@@ -702,6 +805,7 @@ export function App() {
           pdfDoc={pdfDoc}
           currentPage={currentPage}
           numPages={numPages}
+          activePages={activePages}
           scale={scale}
           excludedPages={excludedPages}
           bookmarks={bookmarks}
@@ -716,6 +820,11 @@ export function App() {
           onUpdateAnnotations={handleUpdateAnnotations}
           onPageChange={setCurrentPage}
           onToggleExcludeCurrentPage={() => handleToggleExcludePage(currentPage)}
+          onChangeScale={setScale}
+          onFitWidth={handleFitWidth}
+          onFitPage={handleFitPage}
+          onRestoreAllPruned={handleRestoreAllPruned}
+          onOpenPrunedHistory={() => setSidebarTab('excluded')}
         />
 
         {/* Zen Mode Exit Button */}
