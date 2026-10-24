@@ -1,0 +1,100 @@
+:root {
+  /* ── Neutrals: "Paper" (light) ───────────────────────────── */
+  --paper-0:   #FFFFFF;   /* cards, inputs */
+  --paper-50:  #F7F7F5;   /* page background */
+  --paper-100: #EFEFEC;   /* subtle fills, hover rows */
+  --paper-200: #E4E4E0;   /* borders, dividers */
+  --paper-300: #CFCFC9;   /* strong borders, disabled outlines */
+
+  --ink-900: #0E1220;     /* headings, primary text      18.65:1 on #FFF */
+  --ink-700: #2B3142;     /* body text                   12.08:1 on paper-50 */
+  --ink-500: #566074;     /* secondary text               5.90:1 on paper-50 (AA) */
+  --ink-400: #7A8294;     /* placeholder / decorative     3.59:1 — large text & UI only */
+
+  /* ── Accent: Indigo ──────────────────────────────────────── */
+  --accent-50:  #EEF2FF;
+  --accent-100: #E0E7FF;
+  --accent-300: #A5B4FC;  /* accent text on dark          9.75:1 on dark-bg */
+  --accent-400: #818CF8;
+  --accent-600: #4F46E5;  /* primary fill / links         6.29:1 on white (AA) */
+  --accent-700: #4338CA;  /* hover / pressed              7.90:1 white-on */
+  --accent-900: #312E81;
+
+  /* ── Semantic (always paired with icon + label, never colour alone) ── */
+  --keep-50:   #ECFDF5;  --keep-600: #059669;  --keep-700: #047857;  /* 5.11:1 text on paper-50 */
+  --prune-50:  #FFF1F2;  --prune-600:#E11D48;  --prune-700:#BE123C;  /* 5.72:1 text on prune-50 */
+  --warn-50:   #FFFBEB;  --warn-600: #D97706;  --warn-700: #B45309;  /* 4.84:1 text on warn-50 */
+
+  /* ── Sticky-note palette (product + demo) ────────────────── */
+  --note-yellow:   #FEF3C7;  --note-yellow-edge:   #FCD34D;
+  --note-mint:     #D1FAE5;  --note-mint-edge:     #6EE7B7;
+  --note-sky:      #E0F2FE;  --note-sky-edge:      #7DD3FC;
+  --note-lavender: #EDE9FE;  --note-lavender-edge: #C4B5FD;
+
+  /* ── Semantic aliases (components consume ONLY these) ────── */
+  --bg:            var(--paper-50);
+  --surface:       var(--paper-0);
+  --surface-2:     var(--paper-100);
+  --border:        var(--paper-200);
+  --border-strong: var(--paper-300);
+  --text:          var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --link:          var(--accent-600);
+  --link-hover:    var(--accent-700);
+  --focus-ring:    var(--accent-600);
+
+  /* ── "Stage" (dark product surfaces, used in BOTH themes) ── */
+  --stage-bg:       #0A0D14;
+  --stage-surface:  #11151F;   /* panels */
+  --stage-elevated: #171C29;   /* toolbars, popovers */
+  --stage-line:     rgba(255,255,255,.08);
+  --stage-line-strong: rgba(255,255,255,.14);
+  --stage-text:     #E8EAF0;   /* 16.16:1 on stage-bg */
+  --stage-muted:    #9AA3B5;   /*  7.66:1 on stage-bg */
+  --stage-accent:   #818CF8;   /*  6.12:1 on stage-surface */
+  --stage-keep:     #34D399;   /*  9.49:1 on stage-surface */
+  --stage-prune:    #FB7185;   /*  6.78:1 on stage-surface */
+
+  /* ── Type ────────────────────────────────────────────────── */
+  --font-sans:    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-mono:    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Radius ──────────────────────────────────────────────── */
+  --r-xs: 4px;  --r-sm: 6px;  --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;  --r-2xl: 28px;  --r-pill: 999px;
+
+  /* ── Shadow (soft, low-contrast; never coloured) ─────────── */
+  --shadow-xs: 0 1px 2px rgba(14,18,32,.05);
+  --shadow-sm: 0 1px 2px rgba(14,18,32,.06), 0 2px 6px rgba(14,18,32,.05);
+  --shadow-md: 0 4px 12px rgba(14,18,32,.07), 0 2px 4px rgba(14,18,32,.04);
+  --shadow-lg: 0 16px 40px rgba(14,18,32,.10), 0 4px 10px rgba(14,18,32,.05);
+  --shadow-stage: 0 40px 80px -20px rgba(14,18,32,.35), 0 0 0 1px rgba(255,255,255,.06);
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  --ease-out:   cubic-bezier(.22,1,.36,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms; --dur-4: 560ms;
+
+  /* ── Z-index scale ───────────────────────────────────────── */
+  --z-base:0; --z-sticky:20; --z-nav:40; --z-dropdown:50; --z-overlay:60; --z-modal:70; --z-toast:80; --z-skip:100;
+}
+
+/* Dark site theme */
+:root[data-theme="dark"] {
+  --bg: #0A0D14;  --surface: #11151F;  --surface-2: #171C29;
+  --border: rgba(255,255,255,.08);  --border-strong: rgba(255,255,255,.16);
+  --text: #F3F4F8;  --text-body: #CDD2DE;  --text-muted: #9AA3B5;  --text-faint: #6B7487;
+  --link: #A5B4FC;  --link-hover: #C7D2FE;  --focus-ring: #A5B4FC;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.5);  --shadow-md: 0 4px 14px rgba(0,0,0,.5);  --shadow-lg: 0 18px 44px rgba(0,0,0,.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
