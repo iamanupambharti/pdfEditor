@@ -31,6 +31,7 @@ interface PDFViewerProps {
   annotations: Record<number, PageAnnotations>;
   audioMemos: AudioMemo[];
   paperTone: PaperTone;
+  theme?: 'dark' | 'light';
   onUpdateAnnotations: (pageNumber: number, newAnnotations: PageAnnotations) => void;
   onPageChange: (pageNumber: number) => void;
   onToggleExcludeCurrentPage: () => void;
@@ -50,6 +51,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   annotations,
   audioMemos,
   paperTone,
+  theme = 'dark',
   onUpdateAnnotations,
   onPageChange,
   onToggleExcludeCurrentPage,
@@ -147,7 +149,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     <div 
       ref={containerRef}
       className={`flex-1 overflow-auto flex flex-col items-center justify-start p-6 relative select-none transition-colors duration-300 ${
-        paperTone === 'sepia' ? 'bg-[#1A1612]' : 'bg-[#0A0D14]'
+        paperTone === 'sepia' 
+          ? 'bg-[#1A1612]' 
+          : paperTone === 'night' 
+          ? 'bg-[#0A0D14]' 
+          : theme === 'light' 
+          ? 'bg-[#EAEAE8]' 
+          : 'bg-[#0A0D14]'
       }`}
     >
       {/* Floating Bottom Page Navigator Pill */}
