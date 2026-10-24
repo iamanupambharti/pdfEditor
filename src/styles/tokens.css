@@ -31,7 +31,7 @@
   --note-sky:      #E0F2FE;  --note-sky-edge:      #7DD3FC;
   --note-lavender: #EDE9FE;  --note-lavender-edge: #C4B5FD;
 
-  /* ── Semantic aliases (components consume ONLY these) ────── */
+  /* ── Semantic aliases (Default: Light theme) ─────────────── */
   --bg:            var(--paper-50);
   --surface:       var(--paper-0);
   --surface-2:     var(--paper-100);
@@ -45,17 +45,17 @@
   --link-hover:    var(--accent-700);
   --focus-ring:    var(--accent-600);
 
-  /* ── "Stage" (dark product surfaces, used in BOTH themes) ── */
+  /* ── "Stage" (dark product surfaces) ─────────────────────── */
   --stage-bg:       #0A0D14;
   --stage-surface:  #11151F;   /* panels */
   --stage-elevated: #171C29;   /* toolbars, popovers */
   --stage-line:     rgba(255,255,255,.08);
   --stage-line-strong: rgba(255,255,255,.14);
-  --stage-text:     #E8EAF0;   /* 16.16:1 on stage-bg */
-  --stage-muted:    #9AA3B5;   /*  7.66:1 on stage-bg */
-  --stage-accent:   #818CF8;   /*  6.12:1 on stage-surface */
-  --stage-keep:     #34D399;   /*  9.49:1 on stage-surface */
-  --stage-prune:    #FB7185;   /*  6.78:1 on stage-surface */
+  --stage-text:     #E8EAF0;
+  --stage-muted:    #9AA3B5;
+  --stage-accent:   #818CF8;
+  --stage-keep:     #34D399;
+  --stage-prune:    #FB7185;
 
   /* ── Type ────────────────────────────────────────────────── */
   --font-sans:    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -65,7 +65,7 @@
   /* ── Radius ──────────────────────────────────────────────── */
   --r-xs: 4px;  --r-sm: 6px;  --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;  --r-2xl: 28px;  --r-pill: 999px;
 
-  /* ── Shadow (soft, low-contrast; never coloured) ─────────── */
+  /* ── Shadow ──────────────────────────────────────────────── */
   --shadow-xs: 0 1px 2px rgba(14,18,32,.05);
   --shadow-sm: 0 1px 2px rgba(14,18,32,.06), 0 2px 6px rgba(14,18,32,.05);
   --shadow-md: 0 4px 12px rgba(14,18,32,.07), 0 2px 4px rgba(14,18,32,.04);
@@ -81,13 +81,42 @@
   --z-base:0; --z-sticky:20; --z-nav:40; --z-dropdown:50; --z-overlay:60; --z-modal:70; --z-toast:80; --z-skip:100;
 }
 
-/* Dark site theme */
-:root[data-theme="dark"] {
-  --bg: #0A0D14;  --surface: #11151F;  --surface-2: #171C29;
-  --border: rgba(255,255,255,.08);  --border-strong: rgba(255,255,255,.16);
-  --text: #F3F4F8;  --text-body: #CDD2DE;  --text-muted: #9AA3B5;  --text-faint: #6B7487;
-  --link: #A5B4FC;  --link-hover: #C7D2FE;  --focus-ring: #A5B4FC;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.5);  --shadow-md: 0 4px 14px rgba(0,0,0,.5);  --shadow-lg: 0 18px 44px rgba(0,0,0,.55);
+/* Explicit Light theme */
+:root[data-theme="light"], :root.light {
+  --bg:            var(--paper-50);
+  --surface:       var(--paper-0);
+  --surface-2:     var(--paper-100);
+  --border:        var(--paper-200);
+  --border-strong: var(--paper-300);
+  --text:          var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --link:          var(--accent-600);
+  --link-hover:    var(--accent-700);
+  --focus-ring:    var(--accent-600);
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:     0 4px 12px rgba(0,0,0,.09);
+  --shadow-lg:     0 14px 34px rgba(0,0,0,.12);
+}
+
+/* Dark theme */
+:root[data-theme="dark"], :root.dark {
+  --bg:            #0A0D14;
+  --surface:       #11151F;
+  --surface-2:     #171C29;
+  --border:        rgba(255,255,255,.08);
+  --border-strong: rgba(255,255,255,.16);
+  --text:          #F3F4F8;
+  --text-body:     #CDD2DE;
+  --text-muted:    #9AA3B5;
+  --text-faint:    #6B7487;
+  --link:          #A5B4FC;
+  --link-hover:    #C7D2FE;
+  --focus-ring:    #A5B4FC;
+  --shadow-sm:     0 1px 2px rgba(0,0,0,.5);
+  --shadow-md:     0 4px 14px rgba(0,0,0,.5);
+  --shadow-lg:     0 18px 44px rgba(0,0,0,.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
