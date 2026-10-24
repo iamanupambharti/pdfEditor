@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
+  MousePointer,
+  Hand,
   Pen, 
   Highlighter, 
   Eraser, 
@@ -86,6 +88,22 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: isCurrentPageExcluded ? <RotateCcw className="w-4 h-4 text-emerald-400" /> : <Trash2 className="w-4 h-4 text-rose-400" />,
       shortcut: 'Del',
       action: onToggleExcludeCurrentPage,
+    },
+    {
+      id: 'tool-select',
+      title: 'Pointer / Select Tool',
+      category: 'Tools',
+      icon: <MousePointer className="w-4 h-4 text-indigo-400" />,
+      shortcut: 'V',
+      action: () => onSelectTool('select'),
+    },
+    {
+      id: 'tool-hand',
+      title: 'Pan / Hand Tool',
+      category: 'Tools',
+      icon: <Hand className="w-4 h-4 text-indigo-400" />,
+      shortcut: 'H / Space',
+      action: () => onSelectTool('hand'),
     },
     {
       id: 'tool-pen',
