@@ -14,7 +14,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   ShieldAlert,
-  ExternalLink
+  ExternalLink,
+  CheckSquare
 } from 'lucide-react';
 import { PDFService } from '../services/pdfService';
 import type * as pdfjsLib from 'pdfjs-dist';
@@ -26,6 +27,7 @@ interface SidebarProps {
   numPages: number;
   currentPage: number;
   excludedPages: Set<number>;
+  activePages?: number[];
   bookmarks: number[];
   tags: Record<number, string[]>;
   audioMemos: AudioMemo[];
@@ -36,6 +38,7 @@ interface SidebarProps {
   onSelectPage: (page: number) => void;
   onToggleExcludePage: (page: number) => void;
   onRestoreAllPruned: () => void;
+  onRestoreBatch?: (pages: number[]) => void;
   onRollbackSnapshot: (snapshotId: string) => void;
   onDeleteAudioMemo: (memoId: string) => void;
   onAddTagToPage: (page: number, tag: string) => void;
@@ -65,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectPage,
   onToggleExcludePage,
   onRestoreAllPruned,
+  onRestoreBatch,
   onRollbackSnapshot,
   onDeleteAudioMemo,
   onAddTagToPage,
@@ -76,6 +80,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [newTagInput, setNewTagInput] = useState('');
+
+  // Pruned Multi-Selection & Filter States
+  const [selectedPruned, setSelectedPruned] = useState<Set<number>>(new Set());
+  const [filterMode, setFilterMode] = useState<'active' | 'all'>('active');
+
+  const handleSelectAllPruned = () => {
+    setSelectedPruned(new Set(excludedPages));
+  };
+
+  const handleInvertPrunedSelection = () => {
+    const inverted = new Set<number>();
+    for (const p of excludedPages) {
+      if (!selectedPruned.has(p)) {
+        inverted.add(p);
+      }
+    }
+    setSelectedPruned(inverted);
+  };
+
+  const handleClearPrunedSelection = () => {
+    setSelectedPruned(new Set());
+  };
+
+  const handleToggleSelectPruned = (page: number) => {
+    setSelectedPruned((prev) => {
+      const next = new Set(prev);
+      if (next.has(page)) {
+        next.delete(page);
+      } else {
+        next.add(page);
+      }
+      return next;
+    });
+  };
+
+  const handleRestoreSelectedPruned = () => {
+    if (selectedPruned.size === 0) return;
+    if (onRestoreBatch) {
+      onRestoreBatch(Array.from(selectedPruned));
+    } else {
+      for (const p of selectedPruned) {
+        onToggleExcludePage(p);
+      }
+    }
+    setSelectedPruned(new Set());
+  };
 
   // Generate thumbnails progressively
   useEffect(() => {
@@ -230,10 +280,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ? isLight ? 'bg-rose-100 text-rose-700 font-semibold border border-rose-200' : 'bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/20'
                 : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
             }`}
-            title="Safety Bin (Pruned Pages)"
+            title="Pruned History & Safety Bin (Restore deleted pages)"
           >
             <Trash2 className={`w-3.5 h-3.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-            <span className="text-[11px]">Bin ({excludedPages.size})</span>
+            <span className="text-[11px]">Pruned ({excludedPages.size})</span>
           </button>
 
           <button
@@ -287,109 +337,156 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {activeTab === 'thumbnails' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           <div className={`flex items-center justify-between text-[11px] px-1 mb-1 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
-            <span>{numPages - excludedPages.size} of {numPages} Active Pages</span>
-            <span>Click to Jump</span>
+            <span>{numPages - excludedPages.size} of {numPages} Active</span>
+            <div className={`flex items-center gap-1 rounded-md p-0.5 border text-[10px] ${
+              isLight ? 'bg-slate-200/60 border-slate-300' : 'bg-white/5 border-white/10'
+            }`}>
+              <button
+                onClick={() => setFilterMode('active')}
+                className={`px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                  filterMode === 'active'
+                    ? isLight ? 'bg-white text-indigo-700 shadow-xs' : 'bg-indigo-600 text-white shadow-xs'
+                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Show only active kept pages (hide deleted)"
+              >
+                Active Only
+              </button>
+              <button
+                onClick={() => setFilterMode('all')}
+                className={`px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                  filterMode === 'all'
+                    ? isLight ? 'bg-white text-indigo-700 shadow-xs' : 'bg-indigo-600 text-white shadow-xs'
+                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Show all pages including pruned"
+              >
+                All ({numPages})
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            {Array.from({ length: numPages }, (_, i) => i + 1).map((p) => {
-              const isExcluded = excludedPages.has(p);
-              const isCurrent = currentPage === p;
-              const hasBookmark = bookmarks.includes(p);
-              const pageTags = tags[p] || [];
+          {numPages - excludedPages.size === 0 && filterMode === 'active' ? (
+            <div className="text-center py-12 text-xs">
+              <Trash2 className="w-8 h-8 text-rose-500/60 mx-auto mb-2" />
+              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>All Pages Pruned</p>
+              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
+                All pages are saved safely in your Pruned History.
+              </p>
+              <button
+                onClick={() => onChangeTab('excluded')}
+                className="mt-3 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer shadow-md shadow-indigo-600/30"
+              >
+                Open Pruned History
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {Array.from({ length: numPages }, (_, i) => i + 1)
+                .filter((p) => filterMode === 'all' || !excludedPages.has(p))
+                .map((p, idx) => {
+                  const isExcluded = excludedPages.has(p);
+                  const isCurrent = currentPage === p;
+                  const hasBookmark = bookmarks.includes(p);
+                  const pageTags = tags[p] || [];
 
-              return (
-                <div
-                  key={p}
-                  onClick={() => onSelectPage(p)}
-                  className={`group relative rounded-lg border overflow-hidden cursor-pointer transition-all ${
-                    isCurrent
-                      ? isLight ? 'border-indigo-600 ring-2 ring-indigo-500/30 shadow-md bg-white' : 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg bg-[#11151F]'
-                      : isExcluded
-                      ? isLight ? 'border-rose-200 opacity-55 bg-rose-50 hover:opacity-80' : 'border-rose-900/40 opacity-45 bg-rose-950/20 hover:opacity-75'
-                      : isLight ? 'border-slate-200 hover:border-slate-300 bg-white shadow-xs' : 'border-white/10 hover:border-white/20 bg-[#11151F]/70'
-                  }`}
-                >
-                  {/* Thumbnail Image */}
-                  <div className={`aspect-[3/4] flex items-center justify-center overflow-hidden relative ${
-                    isLight ? 'bg-slate-100' : 'bg-[#0A0D14]'
-                  }`}>
-                    {thumbnails[p] ? (
-                      <img
-                        src={thumbnails[p]}
-                        alt={`Page ${p}`}
-                        className={`w-full h-full object-contain ${isExcluded ? 'grayscale' : ''}`}
-                      />
-                    ) : (
-                      <div className={`text-xs font-mono animate-pulse ${isLight ? 'text-slate-400' : 'text-slate-700'}`}>
-                        Loading...
-                      </div>
-                    )}
-
-                    {/* Excluded Overlay Badge */}
-                    {isExcluded && (
-                      <div className={`absolute inset-0 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px] ${
-                        isLight ? 'bg-rose-50/80' : 'bg-rose-950/70'
-                      }`}>
-                        <Trash2 className={`w-5 h-5 mb-1 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-rose-700' : 'text-rose-300'}`}>
-                          Pruned
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Bookmark indicator */}
-                    {hasBookmark && (
-                      <div className="absolute top-1 left-1 bg-amber-500 text-slate-950 p-0.5 rounded shadow">
-                        <Bookmark className="w-3 h-3 fill-current" />
-                      </div>
-                    )}
-
-                    {/* Hover Toggle Prune Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleExcludePage(p);
-                      }}
-                      className={`absolute top-1 right-1 p-1 rounded-md transition-opacity shadow-md ${
-                        isExcluded
-                          ? 'bg-emerald-600 text-white opacity-100 hover:bg-emerald-500'
-                          : 'bg-rose-600/90 text-white opacity-0 group-hover:opacity-100 hover:bg-rose-500'
+                  return (
+                    <div
+                      key={p}
+                      onClick={() => onSelectPage(p)}
+                      className={`group relative rounded-lg border overflow-hidden cursor-pointer transition-all ${
+                        isCurrent
+                          ? isLight ? 'border-indigo-600 ring-2 ring-indigo-500/30 shadow-md bg-white' : 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg bg-[#11151F]'
+                          : isExcluded
+                          ? isLight ? 'border-rose-200 opacity-55 bg-rose-50 hover:opacity-80' : 'border-rose-900/40 opacity-45 bg-rose-950/20 hover:opacity-75'
+                          : isLight ? 'border-slate-200 hover:border-slate-300 bg-white shadow-xs' : 'border-white/10 hover:border-white/20 bg-[#11151F]/70'
                       }`}
-                      title={isExcluded ? 'Restore Page' : 'Prune this Page'}
                     >
-                      {isExcluded ? (
-                        <RotateCcw className="w-3 h-3" />
-                      ) : (
-                        <Trash2 className="w-3 h-3" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className={`px-2 py-1 flex items-center justify-between text-[11px] ${
-                    isLight ? 'bg-slate-50 border-t border-slate-100' : 'bg-[#0A0D14]'
-                  }`}>
-                    <span className={`font-mono font-medium ${isCurrent ? 'text-indigo-600 font-semibold' : isLight ? 'text-slate-700' : 'text-slate-400'}`}>
-                      p. {p}
-                    </span>
-
-                    {pageTags.length > 0 && (
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                        isLight ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
+                      {/* Thumbnail Image */}
+                      <div className={`aspect-[3/4] flex items-center justify-center overflow-hidden relative ${
+                        isLight ? 'bg-slate-100' : 'bg-[#0A0D14]'
                       }`}>
-                        #{pageTags[0]}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                        {thumbnails[p] ? (
+                          <img
+                            src={thumbnails[p]}
+                            alt={`Page ${p}`}
+                            className={`w-full h-full object-contain ${isExcluded ? 'grayscale' : ''}`}
+                          />
+                        ) : (
+                          <div className={`text-xs font-mono animate-pulse ${isLight ? 'text-slate-400' : 'text-slate-700'}`}>
+                            Loading...
+                          </div>
+                        )}
+
+                        {/* Excluded Overlay Badge */}
+                        {isExcluded && (
+                          <div className={`absolute inset-0 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px] ${
+                            isLight ? 'bg-rose-50/80' : 'bg-rose-950/70'
+                          }`}>
+                            <Trash2 className={`w-5 h-5 mb-1 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-rose-700' : 'text-rose-300'}`}>
+                              Pruned
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Bookmark indicator */}
+                        {hasBookmark && (
+                          <div className="absolute top-1 left-1 bg-amber-500 text-slate-950 p-0.5 rounded shadow">
+                            <Bookmark className="w-3 h-3 fill-current" />
+                          </div>
+                        )}
+
+                        {/* Hover Toggle Prune Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleExcludePage(p);
+                          }}
+                          className={`absolute top-1 right-1 p-1 rounded-md transition-opacity shadow-md cursor-pointer ${
+                            isExcluded
+                              ? 'bg-emerald-600 text-white opacity-100 hover:bg-emerald-500'
+                              : 'bg-rose-600/90 text-white opacity-0 group-hover:opacity-100 hover:bg-rose-500'
+                          }`}
+                          title={isExcluded ? 'Restore Page' : 'Prune this Page'}
+                        >
+                          {isExcluded ? (
+                            <RotateCcw className="w-3 h-3" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Card Footer */}
+                      <div className={`px-2 py-1 flex items-center justify-between text-[11px] ${
+                        isLight ? 'bg-slate-50 border-t border-slate-100' : 'bg-[#0A0D14]'
+                      }`}>
+                        <span className={`font-mono font-medium ${isCurrent ? 'text-indigo-600 font-semibold' : isLight ? 'text-slate-700' : 'text-slate-400'}`}>
+                          {filterMode === 'active' ? `Deck #${idx + 1}` : `p. ${p}`}
+                        </span>
+
+                        {pageTags.length > 0 ? (
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                            isLight ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
+                          }`}>
+                            #{pageTags[0]}
+                          </span>
+                        ) : filterMode === 'active' ? (
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            p.{p}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Tab 2: Safety Bin with Prune Reasons (§17.4 and §18.2 P2) */}
+      {/* Tab 2: Pruned History & Safety Bin with Batch Select / Invert */}
       {activeTab === 'excluded' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           <div className={`p-3 rounded-xl border text-xs ${
@@ -399,61 +496,148 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}>
             <div className={`flex items-center gap-1.5 font-semibold mb-1 ${isLight ? 'text-rose-900' : 'text-rose-200'}`}>
               <ShieldAlert className={`w-4 h-4 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-              <span>Pruned Safety Bin</span>
+              <span>Pruned History & Safety Bin</span>
             </div>
-            <p className={`text-[11px] leading-relaxed mb-2 ${isLight ? 'text-rose-700' : 'text-rose-300/80'}`}>
-              Pruned pages are removed from your active study deck and clean exports, but are 100% safe here.
+            <p className={`text-[11px] leading-relaxed mb-2.5 ${isLight ? 'text-rose-700' : 'text-rose-300/80'}`}>
+              Pages deleted from the active deck are safely preserved here. Select pages to restore them individually or in bulk.
             </p>
+
             {excludedPages.size > 0 && (
-              <button
-                onClick={onRestoreAllPruned}
-                className={`w-full py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
-                  isLight
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 shadow-xs'
-                    : 'bg-rose-600/30 hover:bg-rose-600/50 border-rose-500/40 text-rose-100'
-                }`}
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Restore All {excludedPages.size} Pages
-              </button>
+              <div className="space-y-2">
+                {/* Batch Action Toolbar */}
+                <div className={`flex items-center justify-between gap-1 p-1.5 rounded-lg border text-[11px] ${
+                  isLight ? 'bg-white border-rose-200 text-slate-700' : 'bg-[#11151F] border-white/10 text-slate-300'
+                }`}>
+                  <button
+                    onClick={handleSelectAllPruned}
+                    className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1 font-medium transition-colors cursor-pointer"
+                    title="Select all pruned pages"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Select All</span>
+                  </button>
+
+                  <button
+                    onClick={handleInvertPrunedSelection}
+                    className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1 font-medium transition-colors cursor-pointer"
+                    title="Invert current selection"
+                  >
+                    <RotateCcw className="w-3 h-3 text-amber-500" />
+                    <span>Revert Selection</span>
+                  </button>
+
+                  {selectedPruned.size > 0 && (
+                    <button
+                      onClick={handleClearPrunedSelection}
+                      className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                      title="Clear selection"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Restore Buttons */}
+                <div className="flex items-center gap-1.5">
+                  {selectedPruned.size > 0 ? (
+                    <button
+                      onClick={handleRestoreSelectedPruned}
+                      className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Restore Selected ({selectedPruned.size})
+                    </button>
+                  ) : null}
+
+                  <button
+                    onClick={onRestoreAllPruned}
+                    className={`py-1.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+                      selectedPruned.size > 0
+                        ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
+                        : 'flex-1 bg-rose-600 hover:bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-600/30'
+                    }`}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Restore All ({excludedPages.size})
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
           {excludedPages.size === 0 ? (
             <div className="text-center py-12 text-xs">
               <CheckCircle2 className="w-8 h-8 text-emerald-500/60 mx-auto mb-2" />
-              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>Safety Bin Empty</p>
+              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>History Empty</p>
               <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
-                No pages have been pruned yet. Press Delete on any page to cut clutter.
+                No pages have been pruned yet. Delete pages from the viewer to remove them from your active deck.
               </p>
             </div>
           ) : (
             <div className="space-y-2">
               {Array.from(excludedPages).sort((a, b) => a - b).map((p) => {
                 const currentReason: PruneReason = pruneReasons[p] || 'other';
+                const isChecked = selectedPruned.has(p);
 
                 return (
                   <div
                     key={p}
-                    className={`p-2.5 rounded-xl border text-xs space-y-2 ${
-                      isLight ? 'bg-white border-slate-200 text-slate-800 shadow-xs' : 'bg-[#11151F] border-white/10 text-slate-200'
+                    onClick={() => handleToggleSelectPruned(p)}
+                    className={`p-2.5 rounded-xl border text-xs space-y-2 transition-all cursor-pointer ${
+                      isChecked
+                        ? isLight
+                          ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-400'
+                          : 'bg-indigo-950/30 border-indigo-500/50 ring-1 ring-indigo-500/30'
+                        : isLight
+                        ? 'bg-white border-slate-200 text-slate-800 shadow-xs hover:border-slate-300'
+                        : 'bg-[#11151F] border-white/10 text-slate-200 hover:border-white/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className={`w-6 h-6 rounded flex items-center justify-center font-mono text-[11px] ${
-                          isLight ? 'bg-slate-100 text-slate-700' : 'bg-[#171C29] text-slate-300'
-                        }`}>
-                          {p}
-                        </span>
-                        <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>Page {p}</span>
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}} // handled by parent onClick
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+
+                        {/* Thumbnail snippet if available */}
+                        {thumbnails[p] ? (
+                          <img
+                            src={thumbnails[p]}
+                            alt={`Preview page ${p}`}
+                            className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900/40"
+                          />
+                        ) : (
+                          <span className={`w-8 h-10 rounded flex items-center justify-center font-mono text-[11px] border ${
+                            isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#171C29] text-slate-300 border-white/10'
+                          }`}>
+                            {p}
+                          </span>
+                        )}
+
+                        <div>
+                          <span className={`font-semibold block ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                            Page {p}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            Pruned from deck
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Direct Single Restore Button */}
                       <button
-                        onClick={() => onToggleExcludePage(p)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleExcludePage(p);
+                        }}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
                           isLight
-                            ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700'
-                            : 'bg-indigo-600/20 hover:bg-indigo-600/40 border-indigo-500/30 text-indigo-300'
+                            ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'
+                            : 'bg-emerald-600/20 hover:bg-emerald-600/40 border-emerald-500/40 text-emerald-300'
                         }`}
+                        title="Restore this page back into the active PDF deck"
                       >
                         <RotateCcw className="w-3 h-3" /> Restore
                       </button>
@@ -461,7 +645,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {/* Prune Reason Selector */}
                     {onUpdatePruneReason && (
-                      <div className={`flex items-center gap-1.5 pt-1 border-t ${isLight ? 'border-slate-100' : 'border-white/5'}`}>
+                      <div 
+                        onClick={(e) => e.stopPropagation()} 
+                        className={`flex items-center gap-1.5 pt-1.5 border-t ${isLight ? 'border-slate-100' : 'border-white/5'}`}
+                      >
                         <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Reason:</span>
                         <select
                           value={currentReason}
@@ -489,6 +676,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Tab 3: Version History & Snapshots (§17.4 & §17.7) */}
       {activeTab === 'timeline' && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {/* Quick link to Pruned History */}
+          {excludedPages.size > 0 && (
+            <div 
+              onClick={() => onChangeTab('excluded')}
+              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition-colors ${
+                isLight ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100' : 'bg-rose-950/30 border-rose-900/40 text-rose-300 hover:bg-rose-950/50'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-500" />
+                <div>
+                  <span className="font-semibold block">{excludedPages.size} Deleted / Pruned Pages</span>
+                  <span className="text-[10px] opacity-75">Click to view, batch select & restore</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-60" />
+            </div>
+          )}
+
           <div className={`flex items-center justify-between text-xs px-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
             <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Timeline Snapshots</span>
             <span className="text-[11px]">{snapshots.length} saved</span>
