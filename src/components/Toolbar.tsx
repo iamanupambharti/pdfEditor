@@ -104,34 +104,36 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const isLight = theme === 'light';
 
   return (
-    <div className={`flex items-center justify-between px-3 py-1.5 border-b backdrop-blur-md select-none shadow-xs transition-colors ${
+    <div className={`flex items-center justify-between px-3 py-1.5 border-b backdrop-blur-md select-none shadow-xs transition-colors overflow-x-auto no-scrollbar gap-2 ${
       isLight
         ? 'bg-white/95 border-slate-200 text-slate-800'
         : 'bg-[#0A0D14]/95 border-white/[0.08] text-slate-200'
     }`}>
       {/* Group 1: Study & Prune Action Bar */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 shrink-0">
         {/* Prune / Keep Button for active page */}
         <button
           onClick={onToggleExcludeCurrentPage}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer whitespace-nowrap ${
             isCurrentPageExcluded
               ? 'bg-rose-500/15 text-rose-500 border border-rose-500/40 hover:bg-rose-500/25'
               : isLight
-              ? 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-rose-50 hover:text-rose-600'
+              ? 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300'
               : 'bg-[#11151F] text-slate-200 border border-white/[0.08] hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30'
           }`}
           title={isCurrentPageExcluded ? 'Restore Page into Study Deck (Delete)' : 'Prune (Delete) Page from Exam Deck (Delete)'}
         >
           {isCurrentPageExcluded ? (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Page {currentPage} Pruned (Restore)</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Page {currentPage} Pruned (Restore)</span>
+              <span className="sm:hidden">Restored</span>
             </>
           ) : (
             <>
-              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>Prune Page {currentPage}</span>
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span className="hidden sm:inline">Prune Page {currentPage}</span>
+              <span className="sm:hidden">Prune</span>
             </>
           )}
         </button>
@@ -139,9 +141,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Bookmark page */}
         <button
           onClick={onToggleBookmark}
-          className={`p-1.5 rounded-lg border transition-all ${
+          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
             isBookmarked
-              ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+              ? 'bg-amber-500/20 border-amber-500/40 text-amber-500'
+              : isLight
+              ? 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               : 'bg-[#11151F] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:bg-[#171C29]'
           }`}
           title={isBookmarked ? 'Remove Bookmark (B)' : 'Bookmark Page (B)'}
@@ -149,14 +153,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <Bookmark className="w-4 h-4 fill-current" />
         </button>
 
-        <div className="h-5 w-px bg-white/10 mx-1" />
+        <div className={`h-5 w-px mx-0.5 sm:mx-1 ${isLight ? 'bg-slate-200' : 'bg-white/10'}`} />
 
         {/* Undo / Redo */}
         <button
           onClick={onUndo}
           disabled={!canUndo}
-          className={`p-1.5 rounded-lg transition-colors ${
-            canUndo ? 'hover:bg-white/[0.08] text-slate-300' : 'text-slate-600 cursor-not-allowed'
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+            canUndo 
+              ? isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/[0.08] text-slate-300' 
+              : isLight ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 cursor-not-allowed'
           }`}
           title="Undo (Ctrl+Z)"
         >
@@ -166,8 +172,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         <button
           onClick={onRedo}
           disabled={!canRedo}
-          className={`p-1.5 rounded-lg transition-colors ${
-            canRedo ? 'hover:bg-white/[0.08] text-slate-300' : 'text-slate-600 cursor-not-allowed'
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+            canRedo 
+              ? isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/[0.08] text-slate-300' 
+              : isLight ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 cursor-not-allowed'
           }`}
           title="Redo (Ctrl+Y)"
         >
@@ -176,14 +184,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       {/* Group 2: Modern Toolset Pills */}
-      <div className="flex items-center gap-1 bg-[#11151F] p-1 rounded-xl border border-white/[0.08] shadow-inner">
+      <div className={`flex items-center gap-1 p-1 rounded-xl border shadow-inner shrink-0 ${
+        isLight ? 'bg-slate-100/90 border-slate-200 text-slate-700' : 'bg-[#11151F] border-white/[0.08]'
+      }`}>
         {/* Select */}
         <button
           onClick={() => onChangeTool('select')}
-          className={`p-1.5 rounded-lg transition-all ${
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'select'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Pointer / Select (V)"
         >
@@ -193,10 +203,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Pen */}
         <button
           onClick={() => onChangeTool('pen')}
-          className={`p-1.5 rounded-lg transition-all ${
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'pen'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Freehand Pen (P)"
         >
@@ -206,10 +216,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Highlighter */}
         <button
           onClick={() => onChangeTool('highlighter')}
-          className={`p-1.5 rounded-lg transition-all ${
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'highlighter'
-              ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              ? 'bg-amber-500 text-slate-950 font-bold shadow-sm shadow-amber-500/40'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Smart Exam Highlighter (H)"
         >
@@ -219,10 +229,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Eraser */}
         <button
           onClick={() => onChangeTool('eraser')}
-          className={`p-1.5 rounded-lg transition-all ${
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'eraser'
               ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Stroke & Area Eraser (E)"
         >
@@ -232,10 +242,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Text Sticky Note */}
         <button
           onClick={() => onChangeTool('text')}
-          className={`p-1.5 rounded-lg transition-all ${
+          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'text'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Text Note / Sticky (T)"
         >
@@ -245,10 +255,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Shapes selector */}
         <button
           onClick={() => onChangeTool('shape')}
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all ${
+          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all cursor-pointer ${
             activeTool === 'shape'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+              : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
           }`}
           title="Shapes (S)"
         >
@@ -295,21 +305,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Audio Memo Trigger */}
         <button
           onClick={onStartAudioRecording}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 transition-colors"
+          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border transition-all cursor-pointer ${
+            isLight
+              ? 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20'
+          }`}
           title="Record Voice Memo for this Page (M)"
         >
-          <Mic className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+          <Mic className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
           <span className="text-[11px] font-medium hidden sm:inline">Voice Memo</span>
         </button>
 
         {/* Sticky Note Color Palette */}
         {activeTool === 'text' && (
-          <div className="flex items-center gap-1 ml-1.5 border-l border-white/10 pl-2">
+          <div className={`flex items-center gap-1 ml-1.5 border-l pl-2 ${isLight ? 'border-slate-300' : 'border-white/10'}`}>
             {STICKY_NOTE_COLORS.map((item) => (
               <button
                 key={item.hex}
                 onClick={() => onChangeColor(item.hex)}
-                className={`w-4 h-4 rounded border transition-transform ${
+                className={`w-4 h-4 rounded border transition-transform cursor-pointer ${
                   selectedColor === item.hex ? 'scale-125 ring-2 ring-indigo-400' : ''
                 }`}
                 style={{ backgroundColor: item.hex, borderColor: item.border }}
@@ -321,13 +335,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Drawing Color Palette & Stroke Width */}
         {(activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'shape') && (
-          <div className="flex items-center gap-1.5 ml-1.5 border-l border-white/10 pl-2">
+          <div className={`flex items-center gap-1.5 ml-1.5 border-l pl-2 ${isLight ? 'border-slate-300' : 'border-white/10'}`}>
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => onChangeColor(c)}
-                className={`w-3.5 h-3.5 rounded-full border transition-transform ${
-                  selectedColor.toLowerCase() === c.toLowerCase() ? 'scale-125 border-white ring-2 ring-indigo-500/50' : 'border-slate-700'
+                className={`w-3.5 h-3.5 rounded-full border transition-transform cursor-pointer ${
+                  selectedColor.toLowerCase() === c.toLowerCase() ? 'scale-125 border-white ring-2 ring-indigo-500/50' : 'border-slate-400/40'
                 }`}
                 style={{ backgroundColor: c }}
                 title={`Color ${c}`}
@@ -335,14 +349,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             ))}
             
             {/* Custom color picker */}
-            <label className="relative cursor-pointer p-0.5 rounded hover:bg-white/10" title="Custom Color">
+            <label className={`relative cursor-pointer p-0.5 rounded ${isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/10 text-slate-400'}`} title="Custom Color">
               <input
                 type="color"
                 value={selectedColor.startsWith('#') && selectedColor.length === 7 ? selectedColor : '#f59e0b'}
                 onChange={(e) => onChangeColor(e.target.value)}
                 className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
               />
-              <Palette className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
+              <Palette className="w-3.5 h-3.5 hover:text-indigo-500 transition-colors" />
             </label>
 
             {/* Stroke size selector */}
@@ -352,22 +366,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               max={16}
               value={strokeWidth}
               onChange={(e) => onChangeStrokeWidth(Number(e.target.value))}
-              className="w-14 h-1 ml-1.5 accent-indigo-500 cursor-pointer"
+              className="w-12 sm:w-14 h-1 ml-1.5 accent-indigo-500 cursor-pointer"
               title={`Stroke width: ${strokeWidth}px ([ or ] to adjust)`}
             />
-            <span className="font-mono text-[10px] text-slate-400 w-5 text-right">{strokeWidth}p</span>
+            <span className={`font-mono text-[10px] w-5 text-right ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{strokeWidth}p</span>
           </div>
         )}
       </div>
 
       {/* Group 3: Paper Tone, Zoom & Zen Mode */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Paper Tone 3-way toggle (Dark / Sepia / Night) */}
-        <div className="flex items-center bg-[#11151F] p-0.5 rounded-lg border border-white/[0.08]" title="Paper Tone">
+        <div className={`flex items-center p-0.5 rounded-lg border ${
+          isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#11151F] border-white/[0.08]'
+        }`} title="Paper Tone">
           <button
             onClick={() => onChangePaperTone('dark')}
-            className={`p-1 rounded text-xs transition-colors ${
-              paperTone === 'dark' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+            className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+              paperTone === 'dark' ? 'bg-indigo-600 text-white' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
             }`}
             title="Dark Paper Mode"
           >
@@ -375,8 +391,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </button>
           <button
             onClick={() => onChangePaperTone('sepia')}
-            className={`p-1 rounded text-xs transition-colors ${
-              paperTone === 'sepia' ? 'bg-amber-600 text-amber-100' : 'text-slate-400 hover:text-white'
+            className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+              paperTone === 'sepia' ? 'bg-amber-600 text-amber-100' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
             }`}
             title="Sepia Paper Mode (Eye-strain relief)"
           >
@@ -384,8 +400,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </button>
           <button
             onClick={() => onChangePaperTone('night')}
-            className={`p-1 rounded text-xs transition-colors ${
-              paperTone === 'night' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'
+            className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+              paperTone === 'night' ? 'bg-violet-600 text-white' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
             }`}
             title="Night Inverted PDF (OLED Black Mode)"
           >
@@ -394,27 +410,31 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </div>
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-1 bg-[#11151F] px-2 py-1 rounded-lg border border-white/[0.08] text-xs">
+        <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-lg border text-xs ${
+          isLight ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-[#11151F] border-white/[0.08] text-slate-200'
+        }`}>
           <button
             onClick={() => onChangeScale(Math.max(0.5, scale - 0.15))}
-            className="p-0.5 hover:text-white text-slate-400 transition-colors"
+            className={`p-0.5 transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500' : 'hover:text-white text-slate-400'}`}
             title="Zoom Out (Ctrl -)"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="font-mono text-[11px] w-12 text-center text-slate-300 tabular-nums">
+          <span className={`font-mono text-[11px] w-10 sm:w-12 text-center tabular-nums ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
             {Math.round(scale * 100)}%
           </span>
           <button
             onClick={() => onChangeScale(Math.min(3.0, scale + 0.15))}
-            className="p-0.5 hover:text-white text-slate-400 transition-colors"
+            className={`p-0.5 transition-colors cursor-pointer ${isLight ? 'hover:text-slate-900 text-slate-500' : 'hover:text-white text-slate-400'}`}
             title="Zoom In (Ctrl +)"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onFitWidth}
-            className="ml-1 text-[10px] text-slate-400 hover:text-indigo-400 px-1 py-0.5 rounded hover:bg-white/[0.08]"
+            className={`ml-0.5 sm:ml-1 text-[10px] px-1 py-0.5 rounded cursor-pointer ${
+              isLight ? 'text-slate-600 hover:text-indigo-600 hover:bg-slate-200' : 'text-slate-400 hover:text-indigo-400 hover:bg-white/[0.08]'
+            }`}
             title="Fit Width (Ctrl 0)"
           >
             Fit
@@ -424,15 +444,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Zen Mode Button */}
         <button
           onClick={onToggleZenMode}
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+          className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
             isZenMode
-              ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-300'
+              ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400'
+              : isLight
+              ? 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200'
               : 'bg-[#11151F] border-white/[0.08] text-slate-300 hover:text-white hover:bg-[#171C29]'
           }`}
           title="Zen Cram Mode (Press Z or F11)"
         >
           <Maximize2 className="w-3.5 h-3.5" />
-          <span className="text-[11px] hidden md:inline">Zen</span>
+          <span className="text-[11px] hidden lg:inline">Zen</span>
         </button>
       </div>
     </div>
