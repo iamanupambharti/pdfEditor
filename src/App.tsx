@@ -736,6 +736,7 @@ export function App() {
           state={pomodoro}
           onChangeState={setPomodoro}
           onClose={() => setShowPomodoroWidget(false)}
+          theme={appTheme}
         />
       )}
 
@@ -746,6 +747,7 @@ export function App() {
         snapshots={snapshots}
         onTakeSnapshot={handleTakeSnapshot}
         onRollback={handleRollbackSnapshot}
+        theme={appTheme}
       />
 
       <ExportModal
@@ -756,6 +758,7 @@ export function App() {
         excludedPages={excludedPages}
         onExportCleanPDF={handleExportCleanPDF}
         onExportProjectBundle={handleExportProjectBundle}
+        theme={appTheme}
       />
 
       <AudioRecordModal
@@ -763,6 +766,7 @@ export function App() {
         onClose={() => setShowAudioModal(false)}
         pageNumber={currentPage}
         onSaveAudioMemo={handleSaveAudioMemo}
+        theme={appTheme}
       />
 
       <CommandPalette
@@ -783,6 +787,7 @@ export function App() {
         onChangePaperTone={setPaperTone}
         isCurrentPageExcluded={isCurrentPageExcluded}
         currentPage={currentPage}
+        theme={appTheme}
       />
 
       <SettingsModal
@@ -790,6 +795,7 @@ export function App() {
         onClose={() => setShowSettingsModal(false)}
         settings={settings}
         onSaveSettings={setSettings}
+        theme={appTheme}
       />
     </div>
   );
