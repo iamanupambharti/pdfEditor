@@ -53,8 +53,25 @@ export function App() {
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [pruneReasons, setPruneReasons] = useState<Record<number, PruneReason>>({});
   const [paperTone, setPaperTone] = useState<PaperTone>('dark');
+  const [appTheme, setAppTheme] = useState<'dark' | 'light'>('dark');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+
+  // Sync theme with document attributes (§4.1)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', appTheme);
+    if (appTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [appTheme]);
+
+  const handleToggleTheme = () => {
+    setAppTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Settings state
   const [settings, setSettings] = useState<SettingsState>({
@@ -560,7 +577,9 @@ export function App() {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="h-screen w-screen flex flex-col bg-[#0A0D14] text-[#E8EAF0] overflow-hidden font-sans select-none relative"
+      className={`h-screen w-screen flex flex-col overflow-hidden font-sans select-none relative transition-colors duration-200 ${
+        appTheme === 'light' ? 'bg-[#F7F7F5] text-[#0E1220]' : 'bg-[#0A0D14] text-[#E8EAF0]'
+      }`}
     >
       {/* Visual Full-Screen Drag and Drop Overlay (§17.5) */}
       {isDraggingOver && (
@@ -590,6 +609,8 @@ export function App() {
           fileName={fileName}
           activePagesCount={activePagesCount}
           excludedPagesCount={excludedPages.size}
+          theme={appTheme}
+          onToggleTheme={handleToggleTheme}
           onOpenFile={handleOpenFile}
           onOpenSnapshotModal={() => setShowSnapshotModal(true)}
           onOpenExportModal={() => setShowExportModal(true)}
@@ -631,6 +652,7 @@ export function App() {
           onStartAudioRecording={() => setShowAudioModal(true)}
           paperTone={paperTone}
           onChangePaperTone={setPaperTone}
+          theme={appTheme}
         />
       )}
 
@@ -645,6 +667,7 @@ export function App() {
           onRestoreAllPruned={handleRestoreAllPruned}
           onOpenSnapshotModal={() => setShowSnapshotModal(true)}
           onOpenSidebarToTab={(tab) => setSidebarTab(tab)}
+          theme={appTheme}
         />
       )}
 
@@ -670,6 +693,7 @@ export function App() {
             onDeleteAudioMemo={handleDeleteAudioMemo}
             onAddTagToPage={handleAddTagToPage}
             onUpdatePruneReason={handleUpdatePruneReason}
+            theme={appTheme}
           />
         )}
 
@@ -688,6 +712,7 @@ export function App() {
           annotations={annotations}
           audioMemos={audioMemos}
           paperTone={paperTone}
+          theme={appTheme}
           onUpdateAnnotations={handleUpdateAnnotations}
           onPageChange={setCurrentPage}
           onToggleExcludeCurrentPage={() => handleToggleExcludePage(currentPage)}
