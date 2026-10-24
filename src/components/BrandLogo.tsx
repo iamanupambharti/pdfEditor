@@ -4,6 +4,7 @@ interface BrandLogoProps {
   size?: number; // Size in px, default 24
   showWordmark?: boolean;
   showProBadge?: boolean;
+  theme?: 'dark' | 'light';
   className?: string;
 }
 
@@ -11,8 +12,11 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 24,
   showWordmark = true,
   showProBadge = true,
+  theme,
   className = '',
 }) => {
+  const isLight = theme === 'light';
+
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
       {/* Brand Mark: Rounded square with 3 bars, bottom bar struck through in rose */}
@@ -52,14 +56,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {/* Wordmark: "FocusDeck" + PDF pill */}
       {showWordmark && (
         <div className="flex items-center gap-1.5 font-sans">
-          <span className="font-semibold text-sm tracking-[-0.02em] text-white">
-            Focus<span className="text-indigo-400">Deck</span>
+          <span className={`font-semibold text-sm tracking-[-0.02em] ${
+            isLight ? 'text-slate-900' : 'text-white'
+          }`}>
+            Focus<span className={isLight ? 'text-indigo-600 font-bold' : 'text-indigo-400'}>Deck</span>
           </span>
-          <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          <span className={`text-[10px] font-mono font-medium px-1.5 py-0.2 rounded border ${
+            isLight
+              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+          }`}>
             PDF
           </span>
           {showProBadge && (
-            <span className="text-[9px] font-bold tracking-wider uppercase px-1 py-0.2 rounded bg-white text-slate-950 shadow-sm ml-0.5">
+            <span className={`text-[9px] font-bold tracking-wider uppercase px-1 py-0.2 rounded shadow-xs ml-0.5 border ${
+              isLight
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-950 border-white/20'
+            }`}>
               PRO
             </span>
           )}
