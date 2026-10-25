@@ -23,9 +23,7 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
   snapshots,
   onTakeSnapshot,
   onRollback,
-  theme = 'dark',
 }) => {
-  const isLight = theme === 'light';
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -40,23 +38,32 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 select-none">
-      <div className={`w-full max-w-lg border rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-colors ${
-        isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-200'
-      }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 select-none">
+      <div 
+        className="w-full max-w-lg border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        style={{
+          background: '#1A1A1D',
+          borderColor: 'rgba(255,255,255,.14)',
+          color: '#F1EFEA'
+        }}
+      >
         {/* Header */}
-        <div className={`px-5 py-4 border-b flex items-center justify-between ${
-          isLight ? 'bg-slate-50 border-slate-200' : 'border-slate-800'
-        }`}>
+        <div 
+          className="px-5 py-4 border-b flex items-center justify-between"
+          style={{
+            background: '#131315',
+            borderColor: 'rgba(255,255,255,.08)'
+          }}
+        >
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${isLight ? 'bg-indigo-100 text-indigo-700' : 'bg-indigo-600/20 text-indigo-400'}`}>
+            <div className="p-2 rounded-lg bg-white/10 text-[#F1EFEA]">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h3 className={`font-semibold text-sm ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              <h3 className="font-semibold text-sm text-[#F1EFEA]">
                 Version History & Snapshots
               </h3>
-              <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p className="text-xs text-[#A3A09A]">
                 Save states before pruning or revert back to any previous checkpoint
               </p>
             </div>
@@ -64,9 +71,7 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
 
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
+            className="p-1.5 rounded-lg text-[#A3A09A] hover:text-[#F1EFEA] hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -75,35 +80,37 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
         {/* Content */}
         <div className="p-5 overflow-y-auto max-h-[60vh] space-y-5">
           {/* Create New Snapshot Form */}
-          <form onSubmit={handleCreate} className={`p-3.5 rounded-xl border space-y-2.5 ${
-            isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'
-          }`}>
-            <span className={`text-xs font-semibold flex items-center gap-1.5 ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
-              <Sparkles className={`w-3.5 h-3.5 ${isLight ? 'text-indigo-600' : 'text-indigo-400'}`} /> Create New Safety Checkpoint
+          <form 
+            onSubmit={handleCreate} 
+            className="p-3.5 rounded-xl border space-y-2.5"
+            style={{
+              background: '#131315',
+              borderColor: 'rgba(255,255,255,.08)'
+            }}
+          >
+            <span className="text-xs font-semibold flex items-center gap-1.5 text-[#F1EFEA]">
+              <Sparkles className="w-3.5 h-3.5 text-[#DDD8CC]" /> Create New Safety Checkpoint
             </span>
             <input
               type="text"
               placeholder="e.g. Before Chapter 3 Page Prune"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full rounded-lg px-3 py-1.5 text-xs outline-none border focus:border-indigo-500 ${
-                isLight ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400' : 'bg-slate-900 border-slate-700 text-white placeholder-slate-500'
-              }`}
+              className="w-full rounded-lg px-3 py-1.5 text-xs outline-none border border-white/10 bg-[#0B0B0D] text-[#F1EFEA] placeholder-[#A3A09A] focus:border-[#DDD8CC]"
             />
             <input
               type="text"
               placeholder="Optional notes (e.g. keeping only CAP theorem)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className={`w-full rounded-lg px-3 py-1.5 text-xs outline-none border focus:border-indigo-500 ${
-                isLight ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400' : 'bg-slate-900 border-slate-700 text-white placeholder-slate-500'
-              }`}
+              className="w-full rounded-lg px-3 py-1.5 text-xs outline-none border border-white/10 bg-[#0B0B0D] text-[#F1EFEA] placeholder-[#A3A09A] focus:border-[#DDD8CC]"
             />
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={!name.trim()}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                className="btn primary"
+                style={{ height: '30px', padding: '0 12px', fontSize: '12px' }}
               >
                 <Plus className="w-3.5 h-3.5" /> Save Checkpoint
               </button>
@@ -112,31 +119,33 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
 
           {/* History List */}
           <div className="space-y-2">
-            <span className={`text-xs font-semibold block px-1 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
+            <span className="text-xs font-semibold block px-1 text-[#A3A09A]">
               Previous Checkpoints ({snapshots.length})
             </span>
 
             {snapshots.length === 0 ? (
-              <div className="text-center py-6 text-slate-500 text-xs">
+              <div className="text-center py-6 text-[#A3A09A] text-xs">
                 No checkpoints saved yet.
               </div>
             ) : (
               snapshots.map((snap) => (
                 <div
                   key={snap.id}
-                  className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
-                    isLight ? 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs' : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
-                  }`}
+                  className="p-3 rounded-xl border flex items-center justify-between text-xs transition-colors"
+                  style={{
+                    background: '#131315',
+                    borderColor: 'rgba(255,255,255,.08)'
+                  }}
                 >
                   <div className="space-y-0.5">
-                    <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{snap.name}</div>
+                    <div className="font-semibold text-[#F1EFEA]">{snap.name}</div>
                     {snap.description && (
-                      <div className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{snap.description}</div>
+                      <div className="text-[11px] text-[#A3A09A]">{snap.description}</div>
                     )}
-                    <div className={`text-[10px] flex items-center gap-2 pt-1 font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+                    <div className="text-[10px] flex items-center gap-2 pt-1 font-mono text-[#A3A09A]">
                       <span>{new Date(snap.timestamp).toLocaleString()}</span>
                       <span>•</span>
-                      <span>{snap.excludedPages.length} pages pruned</span>
+                      <span className="text-[#FDA4AF]">{snap.excludedPages.length} pages pruned</span>
                     </div>
                   </div>
 
@@ -145,13 +154,21 @@ export const SnapshotModal: React.FC<SnapshotModalProps> = ({
                       onRollback(snap.id);
                       onClose();
                     }}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
-                      isLight
-                        ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700'
-                        : 'bg-indigo-600/20 hover:bg-indigo-600/40 border-indigo-500/30 text-indigo-300'
-                    }`}
+                    style={{
+                      height: '28px',
+                      padding: '0 10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(251,113,133,.45)',
+                      background: 'rgba(251,113,133,.08)',
+                      color: '#FDA4AF',
+                      font: "500 12px/1 'Geist',sans-serif",
+                      cursor: 'pointer'
+                    }}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" /> Revert
+                    <RotateCcw className="w-3.5 h-3.5" /> Rollback
                   </button>
                 </div>
               ))
