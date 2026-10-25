@@ -20,7 +20,7 @@ export async function generateSampleExamPDF(): Promise<ArrayBuffer> {
       color: rgb(0.08, 0.12, 0.2),
     });
 
-    page.drawText('Lumina Academic Prep • Final Exam Revision', {
+    page.drawText('FocusDeck PDF • Distributed Systems Exam Revision', {
       x: 36,
       y: height - 38,
       size: 13,
@@ -62,7 +62,7 @@ export async function generateSampleExamPDF(): Promise<ArrayBuffer> {
     });
 
     // Footer
-    page.drawText('LuminaPDF Study Deck • Use Page Pruner to remove irrelevant pages before exam', {
+    page.drawText('FocusDeck PDF Study Deck • Prune non-examinable pages to retain more', {
       x: 36,
       y: 28,
       size: 9,
