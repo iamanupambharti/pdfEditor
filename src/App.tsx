@@ -110,9 +110,9 @@ export function App() {
   const [undoStack, setUndoStack] = useState<HistoryState[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryState[]>([]);
 
-  // Tool states
+  // Tool states per ui.md §2 & §9 (default ink is Violet #8B5CF6)
   const [activeTool, setActiveTool] = useState<ToolType>('select');
-  const [selectedColor, setSelectedColor] = useState<string>('#f59e0b');
+  const [selectedColor, setSelectedColor] = useState<string>('#8B5CF6');
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [shapeType, setShapeType] = useState<ShapeType>('rectangle');
 
@@ -684,11 +684,20 @@ export function App() {
       {/* Visual Full-Screen Drag and Drop Overlay (§17.5) */}
       {isDraggingOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-8 pointer-events-none">
-          <div className="w-full max-w-md border-2 border-dashed border-indigo-500 rounded-3xl p-10 text-center bg-indigo-950/30 shadow-2xl">
-            <FileUp className="w-16 h-16 text-indigo-400 mx-auto mb-4 animate-bounce" />
-            <h3 className="text-xl font-bold text-white mb-2">Drop your PDF to open it</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Drop any standard <span className="text-indigo-300 font-mono">.pdf</span> file or <span className="text-indigo-300 font-mono">.fdeck</span> project bundle here.
+          <div 
+            className="w-full max-w-md border-2 border-dashed rounded-3xl p-10 text-center shadow-2xl"
+            style={{
+              borderColor: '#DDD8CC',
+              background: '#1A1A1D',
+              color: '#F1EFEA'
+            }}
+          >
+            <FileUp className="w-16 h-16 text-[#F1EFEA] mx-auto mb-4 animate-bounce" />
+            <h3 className="text-xl font-bold text-[#F1EFEA] mb-2 font-display serif" style={{ fontFamily: "'Instrument Serif',Georgia,serif", fontSize: '26px' }}>
+              Drop your PDF to open it
+            </h3>
+            <p className="text-xs text-[#A3A09A] leading-relaxed">
+              Drop any standard <span className="text-[#F1EFEA] font-mono">.pdf</span> file or <span className="text-[#F1EFEA] font-mono">.fdeck</span> project bundle here.
             </p>
           </div>
         </div>
@@ -717,13 +726,33 @@ export function App() {
           onOpenCommandPalette={() => setShowCommandPalette(true)}
           pomodoroTimeLeft={pomodoro.timeLeft}
           isPomodoroRunning={pomodoro.isRunning}
-          onTogglePomodoro={() => setPomodoro((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
+          pomodoroMode={pomodoro.mode}
+          onTogglePomodoro={() => {
+            setPomodoro((prev) => ({ ...prev, isRunning: !prev.isRunning }));
+            setShowPomodoroWidget((prev) => !prev);
+          }}
+          onOpenSettings={() => setShowSettingsModal(true)}
           hasUnsavedChanges={hasUnsavedChanges}
           snapshotCount={snapshots.length}
         />
       )}
 
-      {/* Primary Study Toolbar (§17.3) */}
+      {/* Region 2: Cognitive Relief HUD Banner (§17.2) */}
+      {!isZenMode && (
+        <ExamBanner
+          numPages={numPages}
+          excludedPages={excludedPages}
+          minutesSavedPerPage={settings.minutesSavedPerPage}
+          examDate={settings.examDate}
+          onBatchPrune={handleBatchPrune}
+          onRestoreAllPruned={handleRestoreAllPruned}
+          onOpenSnapshotModal={() => setShowSnapshotModal(true)}
+          onOpenSidebarToTab={(tab) => setSidebarTab(tab)}
+          theme={appTheme}
+        />
+      )}
+
+      {/* Region 3: Primary Command and Tooling Ribbon (§17.3) */}
       {!isZenMode && (
         <Toolbar
           activeTool={activeTool}
@@ -753,21 +782,6 @@ export function App() {
           onStartAudioRecording={() => setShowAudioModal(true)}
           paperTone={paperTone}
           onChangePaperTone={setPaperTone}
-          theme={appTheme}
-        />
-      )}
-
-      {/* Exam Focus Banner (§17.2) */}
-      {!isZenMode && (
-        <ExamBanner
-          numPages={numPages}
-          excludedPages={excludedPages}
-          minutesSavedPerPage={settings.minutesSavedPerPage}
-          examDate={settings.examDate}
-          onBatchPrune={handleBatchPrune}
-          onRestoreAllPruned={handleRestoreAllPruned}
-          onOpenSnapshotModal={() => setShowSnapshotModal(true)}
-          onOpenSidebarToTab={(tab) => setSidebarTab(tab)}
           theme={appTheme}
         />
       )}
