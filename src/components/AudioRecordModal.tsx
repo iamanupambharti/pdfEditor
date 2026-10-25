@@ -15,9 +15,7 @@ export const AudioRecordModal: React.FC<AudioRecordModalProps> = ({
   onClose,
   pageNumber,
   onSaveAudioMemo,
-  theme = 'dark',
 }) => {
-  const isLight = theme === 'light';
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [title, setTitle] = useState('');
@@ -75,27 +73,30 @@ export const AudioRecordModal: React.FC<AudioRecordModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 select-none">
-      <div className={`w-full max-w-sm border rounded-2xl shadow-2xl p-5 space-y-4 transition-colors ${
-        isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-200'
-      }`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 select-none">
+      <div 
+        className="w-full max-w-sm border rounded-2xl shadow-2xl p-5 space-y-4"
+        style={{
+          background: '#1A1A1D',
+          borderColor: 'rgba(255,255,255,.14)',
+          color: '#F1EFEA'
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${isLight ? 'bg-rose-100 text-rose-600' : 'bg-rose-600/20 text-rose-400'}`}>
+            <div className="p-2 rounded-lg bg-rose-500/15 text-rose-400">
               <Mic className="w-5 h-5" />
             </div>
             <div>
-              <h3 className={`font-semibold text-sm ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              <h3 className="font-semibold text-sm text-[#F1EFEA]">
                 Record Voice Memo
               </h3>
-              <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Attach audio explanation to Page {pageNumber}</p>
+              <p className="text-xs text-[#A3A09A]">Attach audio explanation to Page {pageNumber}</p>
             </div>
           </div>
           <button
             onClick={handleCancel}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
+            className="p-1.5 rounded-lg text-[#A3A09A] hover:text-[#F1EFEA] hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -106,17 +107,11 @@ export const AudioRecordModal: React.FC<AudioRecordModalProps> = ({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Memo title (e.g. Formula derivation shortcut)"
-          className={`w-full rounded-lg px-3 py-1.5 text-xs outline-none border focus:border-rose-500 ${
-            isLight
-              ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-              : 'bg-slate-950 border-slate-700 text-white placeholder-slate-500'
-          }`}
+          className="w-full rounded-lg px-3 py-1.5 text-xs outline-none border border-white/10 bg-[#131315] text-[#F1EFEA] placeholder-[#A3A09A] focus:border-[#DDD8CC]"
         />
 
         {/* Visual Pulse Recorder Stage */}
-        <div className={`py-6 flex flex-col items-center justify-center rounded-xl border ${
-          isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
-        }`}>
+        <div className="py-6 flex flex-col items-center justify-center rounded-xl border border-white/10 bg-[#131315]">
           <div className="relative mb-3">
             {isRecording && (
               <div className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-35" />
@@ -126,17 +121,17 @@ export const AudioRecordModal: React.FC<AudioRecordModalProps> = ({
               className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer ${
                 isRecording
                   ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  : 'bg-[#FB7185] hover:bg-[#E11D48] text-[#151513]'
               }`}
             >
               {isRecording ? <Square className="w-5 h-5 fill-current" /> : <Mic className="w-6 h-6" />}
             </button>
           </div>
 
-          <div className={`font-mono text-base font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+          <div className="font-mono text-base font-bold text-[#F1EFEA]">
             {formatTime(elapsedSeconds)}
           </div>
-          <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+          <p className="text-[11px] mt-1 text-[#A3A09A]">
             {isRecording ? 'Recording active... Tap square to stop & save' : 'Tap mic to start recording'}
           </p>
         </div>
@@ -144,9 +139,7 @@ export const AudioRecordModal: React.FC<AudioRecordModalProps> = ({
         <div className="flex justify-end gap-2 pt-1">
           <button
             onClick={handleCancel}
-            className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer ${
-              isLight ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100' : 'text-slate-400 hover:text-white'
-            }`}
+            className="px-3 py-1.5 rounded-lg text-xs text-[#A3A09A] hover:text-[#F1EFEA] cursor-pointer"
           >
             Cancel
           </button>
