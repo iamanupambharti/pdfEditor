@@ -1,51 +1,37 @@
 import React from 'react';
-import { 
-  FileText, 
-  Minus, 
-  Square, 
-  X, 
-  History, 
-  Download, 
-  Search,
-  Timer,
-  FolderOpen,
-  Sun,
-  Moon
-} from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
 
 interface TitleBarProps {
-  fileName: string;
-  activePagesCount: number;
-  excludedPagesCount: number;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
-  onOpenFile: () => void;
+  fileName?: string;
+  activePagesCount?: number;
+  excludedPagesCount?: number;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
+  onOpenFile?: () => void;
   onOpenSnapshotModal: () => void;
   onOpenExportModal: () => void;
   onOpenCommandPalette: () => void;
-  pomodoroTimeLeft: number;
-  isPomodoroRunning: boolean;
+  pomodoroTimeLeft?: number;
+  isPomodoroRunning?: boolean;
+  pomodoroMode?: 'study' | 'shortBreak' | 'longBreak';
   onTogglePomodoro: () => void;
+  onOpenSettings?: () => void;
   hasUnsavedChanges?: boolean;
   snapshotCount?: number;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
   fileName,
-  activePagesCount,
-  excludedPagesCount,
-  theme,
-  onToggleTheme,
   onOpenFile,
   onOpenSnapshotModal,
   onOpenExportModal,
   onOpenCommandPalette,
-  pomodoroTimeLeft,
-  isPomodoroRunning,
+  pomodoroTimeLeft = 1452,
+  isPomodoroRunning = false,
+  pomodoroMode = 'study',
   onTogglePomodoro,
+  onOpenSettings,
   hasUnsavedChanges = false,
-  snapshotCount = 0,
+  snapshotCount = 4,
 }) => {
   const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.isElectron;
 
@@ -67,189 +53,181 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const isLight = theme === 'light';
+  const modeLabel = pomodoroMode === 'study' ? 'Study' : 'Break';
 
   return (
-    <header className={`h-11 border-b flex items-center justify-between px-3 select-none z-50 backdrop-blur-md transition-colors ${
-      isLight 
-        ? 'bg-white/95 border-slate-200/90 text-slate-800 shadow-xs' 
-        : 'bg-[#0A0D14]/95 border-white/[0.08] text-slate-200'
-    }`}>
-      {/* Left: Brand Identity & Document Name */}
-      <div className="flex items-center gap-3">
-        <BrandLogo size={24} theme={theme} />
+    <header 
+      className="h-10 flex-none select-none z-50"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        background: '#0B0B0D',
+        borderBottom: '1px solid rgba(255,255,255,.08)',
+        WebkitAppRegion: 'drag'
+      } as React.CSSProperties}
+    >
+      {/* Left: Brand mark, PRO badge, & Open File trigger */}
+      <div 
+        className="flex items-center gap-2 pl-3.5"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <rect width="22" height="22" rx="6" fill="#1A1A1D" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
+          <rect x="7.5" y="4.5" width="9.5" height="12" rx="2" fill="#DDD8CC" opacity=".45" />
+          <rect x="5" y="7" width="9.5" height="12" rx="2" fill="#F1EFEA" />
+        </svg>
+        <span className="font-semibold text-[13px] leading-none tracking-[-0.01em] text-[#F1EFEA]">
+          FocusDeck
+        </span>
+        <span 
+          className="mono text-[9.5px] font-medium leading-none tracking-[0.1em] text-[#A3A09A] border border-white/[0.14] rounded px-1.5 py-[3px]"
+          title={fileName ? `Loaded: ${fileName}${hasUnsavedChanges ? ' (Unsaved)' : ''}` : 'FocusDeck PRO Workstation'}
+        >
+          PRO
+        </span>
+        {hasUnsavedChanges && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#DDD8CC]" title="Unsaved changes in workspace" />
+        )}
 
-        <div className={`h-4 w-px ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
-
-        {/* Current Document status badge */}
-        <div className="flex items-center gap-2 text-xs">
-          {hasUnsavedChanges && (
-            <span 
-              className="w-1.5 h-1.5 rounded-full bg-indigo-500" 
-              title="Unsaved changes in workspace" 
-            />
-          )}
-          <FileText className={`w-3.5 h-3.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-          <span 
-            className={`max-w-[200px] truncate font-medium ${isLight ? 'text-slate-800' : 'text-slate-200'}`} 
-            title={fileName || 'No Document Open'}
-          >
-            {fileName || 'No Document Open'}
-          </span>
-
-          {activePagesCount > 0 && (
-            <div className="flex items-center gap-1.5 ml-1">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border flex items-center gap-1.5 ${
-                isLight 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {activePagesCount} active
-              </span>
-
-              {excludedPagesCount > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                  isLight 
-                    ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                }`}>
-                  {excludedPagesCount} pruned
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Open File Button */}
+        {onOpenFile && (
           <button
+            className="btn"
             onClick={onOpenFile}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ml-1 ${
-              isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                : 'bg-[#11151F] hover:bg-[#171C29] border-white/10 text-slate-300 hover:text-white'
-            }`}
-            title="Open PDF or .fdeck Project (Ctrl+O)"
+            aria-label="Open PDF file (Ctrl O)"
+            style={{
+              height: '26px',
+              padding: '0 8px',
+              marginLeft: '4px',
+              fontSize: '11.5px',
+              gap: '6px',
+              background: 'rgba(255,255,255,.05)',
+              borderColor: 'rgba(255,255,255,.1)',
+              color: '#F1EFEA'
+            }}
           >
-            <FolderOpen className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-[11px] hidden sm:inline">Open</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+            </svg>
+            <span>Open PDF</span>
+            <span className="kbd" style={{ fontSize: '9px', height: '16px', padding: '0 4px' }}>Ctrl O</span>
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Middle: Command Palette & Pomodoro quick status chip */}
-      <div className="flex items-center gap-2.5">
-        <button
-          onClick={onOpenCommandPalette}
-          className={`flex items-center gap-2.5 px-3 py-1 rounded-lg border text-xs transition-all shadow-sm w-56 sm:w-64 cursor-pointer ${
-            isLight
-              ? 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-500 hover:text-slate-800'
-              : 'bg-[#11151F] hover:bg-[#171C29] border-white/[0.08] text-slate-400 hover:text-slate-200'
-          }`}
-          title="Command Palette (Ctrl+K)"
-        >
-          <Search className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-          <span className="text-[11px] truncate flex-1 text-left">Type a command or search...</span>
-          <kbd className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-            isLight 
-              ? 'bg-white border-slate-200 text-slate-600' 
-              : 'bg-[#0A0D14] border-white/10 text-slate-400'
-          }`}>
-            Ctrl+K
-          </kbd>
-        </button>
+      {/* Center: Command Palette CTA button */}
+      <button 
+        className="btn"
+        onClick={onOpenCommandPalette}
+        aria-label="Open command palette"
+        style={{
+          width: '360px',
+          justifyContent: 'flex-start',
+          height: '28px',
+          background: '#131315',
+          color: '#A3A09A',
+          fontWeight: 400,
+          WebkitAppRegion: 'no-drag'
+        } as React.CSSProperties}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <span className="flex-1 text-left text-[12px]">Command Palette</span>
+        <span className="kbd">Ctrl K</span>
+      </button>
 
-        {/* Pomodoro quick chip */}
-        <button
+      {/* Right: Actions, Timer Pill & Window Controls */}
+      <div 
+        className="flex items-center justify-end gap-1.5 pr-0"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
+        {/* Pomodoro Quick Chip */}
+        <button 
+          className="btn"
           onClick={onTogglePomodoro}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
-            isPomodoroRunning
-              ? isLight
-                ? 'bg-amber-50 border-amber-300 text-amber-800'
-                : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-              : isLight
-              ? 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-              : 'bg-[#11151F] border-white/[0.08] text-slate-400 hover:text-slate-200 hover:bg-[#171C29]'
-          }`}
-          title="Study Pomodoro Timer (Ctrl+Alt+P)"
+          aria-label="Toggle Pomodoro widget"
+          style={{
+            height: '28px',
+            padding: '0 10px',
+            background: 'rgba(255,255,255,.05)',
+            borderColor: 'rgba(255,255,255,.1)',
+            color: '#F1EFEA'
+          }}
         >
-          <Timer className={`w-3.5 h-3.5 ${isPomodoroRunning ? 'animate-pulse text-amber-500' : ''}`} />
-          <span className="font-mono text-[11px] tabular-nums">{formatTimer(pomodoroTimeLeft)}</span>
-          {isPomodoroRunning && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping ml-0.5" />}
-        </button>
-      </div>
-
-      {/* Right: Actions & Theme Toggle & Window Controls */}
-      <div className="flex items-center gap-1.5">
-        {/* Mood Theme Switcher (Dark / Light) */}
-        <button
-          onClick={onToggleTheme}
-          className={`flex items-center gap-1.5 p-1.5 rounded-lg border transition-colors cursor-pointer ${
-            isLight
-              ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
-              : 'bg-[#11151F] hover:bg-[#171C29] border-white/10 text-slate-300 hover:text-white'
-          }`}
-          title={isLight ? 'Switch to Dark Mood (Stage Theme)' : 'Switch to Light Mood (Paper Theme)'}
-        >
-          {isLight ? (
-            <Moon className="w-4 h-4 text-indigo-600" />
-          ) : (
-            <Sun className="w-4 h-4 text-amber-400" />
-          )}
+          <span className={isPomodoroRunning ? 'pulse' : ''} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#DDD8CC' }} />
+          <span className="mono text-[12px]">{formatTimer(pomodoroTimeLeft)}</span>
+          <span className="text-[12px] text-[#A3A09A]">{modeLabel}</span>
         </button>
 
-        <button
+        {/* Snapshots button */}
+        <button 
+          className="btn ic"
           onClick={onOpenSnapshotModal}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-            isLight 
-              ? 'text-slate-700 hover:bg-slate-100' 
-              : 'text-slate-300 hover:text-white hover:bg-white/[0.06]'
-          }`}
-          title="Version History & Snapshots"
+          data-tip={`Snapshots · ${snapshotCount}`}
+          aria-label={`Snapshots, ${snapshotCount} checkpoints`}
+          style={{ height: '28px', width: '28px', borderColor: 'transparent' }}
         >
-          <History className="w-3.5 h-3.5 text-indigo-500" />
-          <span className="text-[11px] font-medium hidden sm:inline">Snapshots</span>
-          {snapshotCount > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono border ${
-              isLight
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-            }`}>
-              {snapshotCount}
-            </span>
-          )}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M12 7v5l4 2" />
+          </svg>
         </button>
 
-        <button
+        {/* Settings button */}
+        <button 
+          className="btn ic"
+          onClick={onOpenSettings}
+          data-tip="Settings"
+          aria-label="Settings"
+          style={{ height: '28px', width: '28px', borderColor: 'transparent' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 21v-7" />
+            <path d="M4 10V3" />
+            <path d="M12 21v-9" />
+            <path d="M12 8V3" />
+            <path d="M20 21v-5" />
+            <path d="M20 12V3" />
+            <path d="M1 14h6" />
+            <path d="M9 8h6" />
+            <path d="M17 16h6" />
+          </svg>
+        </button>
+
+        {/* Export Deck CTA */}
+        <button 
+          className="btn primary"
           onClick={onOpenExportModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-medium transition-all shadow-sm shadow-indigo-600/30 cursor-pointer"
-          title="Export Cleaned PDF or .fdeck Project"
+          style={{ height: '28px', margin: '0 8px 0 4px' }}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span className="text-[11px] font-medium">Export</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Export Deck
         </button>
 
+        {/* Desktop Native Window Controls (Windows) */}
         {isElectron && (
-          <div className={`flex items-center ml-2 border-l pl-1 ${isLight ? 'border-slate-300' : 'border-white/10'}`}>
-            <button
-              onClick={handleMinimize}
-              className={`p-1.5 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/[0.08] text-slate-400 hover:text-white'}`}
-              title="Minimize"
-            >
-              <Minus className="w-3.5 h-3.5" />
+          <div className="flex items-center">
+            <button className="wc" onClick={handleMinimize} aria-label="Minimize">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+                <path d="M5 12h14" />
+              </svg>
             </button>
-            <button
-              onClick={handleMaximize}
-              className={`p-1.5 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/[0.08] text-slate-400 hover:text-white'}`}
-              title="Maximize"
-            >
-              <Square className="w-3 h-3" />
+            <button className="wc" onClick={handleMaximize} aria-label="Maximize">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 4h16v16H4z" />
+              </svg>
             </button>
-            <button
-              onClick={handleClose}
-              className="p-1.5 hover:bg-rose-600 rounded text-slate-400 hover:text-white transition-colors"
-              title="Close"
-            >
-              <X className="w-3.5 h-3.5" />
+            <button className="wc close" onClick={handleClose} aria-label="Close">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+                <path d="M18 6 6 18 M6 6l12 12" />
+              </svg>
             </button>
           </div>
         )}
