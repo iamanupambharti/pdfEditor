@@ -66,6 +66,21 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "FocusDeck PDF"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF Document",
+        "description": "PDF Document",
+        "mimeType": "application/pdf",
+        "role": "Viewer"
+      },
+      {
+        "ext": "fdeck",
+        "name": "FocusDeck Study Project",
+        "description": "FocusDeck Study Project",
+        "role": "Editor"
+      }
+    ]
   }
 }

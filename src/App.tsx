@@ -577,6 +577,39 @@ export function App() {
     }
   };
 
+  // Listen for file opened via OS file association / CLI / double-click
+  const loadPdfDataRef = useRef(loadPdfData);
+  loadPdfDataRef.current = loadPdfData;
+  const handleLoadProjectBundleRef = useRef(handleLoadProjectBundle);
+  handleLoadProjectBundleRef.current = handleLoadProjectBundle;
+
+  useEffect(() => {
+    const electron = (window as any).electronAPI;
+    if (!electron) return;
+
+    const processPayload = async (result: { name: string; data: ArrayBuffer } | null) => {
+      if (!result || !result.data) return;
+      if (result.name.endsWith('.fdeck') || result.name.endsWith('.lumina')) {
+        const dec = new TextDecoder();
+        const json = dec.decode(result.data);
+        await handleLoadProjectBundleRef.current(json);
+      } else {
+        await loadPdfDataRef.current(result.data, result.name);
+      }
+    };
+
+    if (electron.getInitialFile) {
+      electron.getInitialFile().then(processPayload);
+    }
+
+    if (electron.onOpenFile) {
+      const unsubscribe = electron.onOpenFile(processPayload);
+      return () => {
+        if (typeof unsubscribe === 'function') unsubscribe();
+      };
+    }
+  }, []);
+
   // Global Keyboard Shortcuts (§17.10)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
