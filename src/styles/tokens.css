@@ -45,17 +45,22 @@
   --link-hover:    var(--accent-700);
   --focus-ring:    var(--accent-600);
 
-  /* ── "Stage" (dark product surfaces) ─────────────────────── */
-  --stage-bg:       #0A0D14;
-  --stage-surface:  #11151F;   /* panels */
-  --stage-elevated: #171C29;   /* toolbars, popovers */
-  --stage-line:     rgba(255,255,255,.08);
+  /* ── "Stage" (dark product surfaces - v1.1 Graphite & Bone) ─────── */
+  --stage-bg:          #0B0B0D;   /* --s0 */
+  --stage-surface:     #131315;   /* --s1 panels */
+  --stage-elevated:    #1A1A1D;   /* --s2 toolbars, modals, cards */
+  --stage-hover:       rgba(255,255,255,.05);
+  --stage-line:        rgba(255,255,255,.08);
   --stage-line-strong: rgba(255,255,255,.14);
-  --stage-text:     #E8EAF0;
-  --stage-muted:    #9AA3B5;
-  --stage-accent:   #818CF8;
-  --stage-keep:     #34D399;
-  --stage-prune:    #FB7185;
+  --stage-text:        #F1EFEA;   /* --tx primary text */
+  --stage-muted:       #A3A09A;   /* --mu secondary text */
+  --stage-accent:      #F1EFEA;   /* Bone accent */
+  --stage-accent-soft: #DDD8CC;
+  --stage-accent-tint: rgba(241,239,234,.14);
+  --stage-tool-on:     #2A2A2E;
+  --stage-keep:        #34D399;
+  --stage-prune:       #FB7185;
+  --stage-bookmark:    #F59E0B;
 
   /* ── Type ────────────────────────────────────────────────── */
   --font-sans:    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
