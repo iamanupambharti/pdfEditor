@@ -1,22 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Snapshot, AudioMemo, PruneReason } from '../types/document';
-import { 
-  Layers, 
-  Trash2, 
-  History, 
-  Bookmark, 
-  Mic, 
-  RotateCcw, 
-  CheckCircle2, 
-  Play, 
-  Pause, 
-  Tag, 
-  ChevronLeft, 
-  ChevronRight, 
-  ShieldAlert,
-  ExternalLink,
-  CheckSquare
-} from 'lucide-react';
 import { PDFService } from '../services/pdfService';
 import type * as pdfjsLib from 'pdfjs-dist';
 
@@ -46,12 +29,14 @@ interface SidebarProps {
   theme?: 'dark' | 'light';
 }
 
-const PRUNE_REASONS_LABELS: Record<PruneReason, string> = {
-  mastered: 'Already Mastered',
-  syllabus: 'Out of Syllabus',
-  low_yield: 'Low-Yield Proof',
-  other: 'Other Reason',
+const PRUNE_REASON_LABELS: Record<PruneReason, string> = {
+  mastered: 'Already mastered',
+  syllabus: 'Out of syllabus',
+  low_yield: 'Low-yield proof',
+  other: 'Other reason',
 };
+
+const WAVE_PATH = 'M3 14v4 M8 11v10 M13 8v16 M18 12v8 M23 6v20 M28 10v12 M33 13v6 M38 4v24 M43 9v14 M48 12v8 M53 7v18 M58 11v10 M63 14v4 M68 5v22 M73 10v12 M78 13v6 M83 8v16 M88 11v10 M93 15v2 M98 9v14 M103 12v8 M108 6v20 M113 13v6 M118 10v12 M123 14v4 M128 8v16 M133 12v8 M138 15v2';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   pdfDoc,
@@ -68,104 +53,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectPage,
   onToggleExcludePage,
   onRestoreAllPruned,
-  onRestoreBatch,
   onRollbackSnapshot,
-  onDeleteAudioMemo,
   onAddTagToPage,
   onUpdatePruneReason,
-  theme = 'dark',
 }) => {
-  const isLight = theme === 'light';
-  const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [newTagInput, setNewTagInput] = useState('');
+  const [showNewTagField, setShowNewTagField] = useState(false);
+  const [selectedReasonFilter, setSelectedReasonFilter] = useState<PruneReason | null>(null);
 
-  // Pruned Multi-Selection & Filter States
-  const [selectedPruned, setSelectedPruned] = useState<Set<number>>(new Set());
-  const [filterMode, setFilterMode] = useState<'active' | 'all'>('active');
-
-  const handleSelectAllPruned = () => {
-    setSelectedPruned(new Set(excludedPages));
-  };
-
-  const handleInvertPrunedSelection = () => {
-    const inverted = new Set<number>();
-    for (const p of excludedPages) {
-      if (!selectedPruned.has(p)) {
-        inverted.add(p);
-      }
-    }
-    setSelectedPruned(inverted);
-  };
-
-  const handleClearPrunedSelection = () => {
-    setSelectedPruned(new Set());
-  };
-
-  const handleToggleSelectPruned = (page: number) => {
-    setSelectedPruned((prev) => {
-      const next = new Set(prev);
-      if (next.has(page)) {
-        next.delete(page);
-      } else {
-        next.add(page);
-      }
-      return next;
-    });
-  };
-
-  const handleRestoreSelectedPruned = () => {
-    if (selectedPruned.size === 0) return;
-    if (onRestoreBatch) {
-      onRestoreBatch(Array.from(selectedPruned));
-    } else {
-      for (const p of selectedPruned) {
-        onToggleExcludePage(p);
-      }
-    }
-    setSelectedPruned(new Set());
-  };
-
+  // Progressive thumbnail rendering
   const thumbnailsRef = useRef<Record<number, string>>({});
   useEffect(() => {
     thumbnailsRef.current = thumbnails;
   }, [thumbnails]);
 
-  // Generate thumbnails progressively
   useEffect(() => {
     if (!pdfDoc || numPages === 0) return;
-
     let isMounted = true;
-    const generateAll = async () => {
+
+    const renderBatch = async () => {
       for (let p = 1; p <= numPages; p++) {
         if (!isMounted) break;
         if (!thumbnailsRef.current[p]) {
           try {
-            const dataUrl = await PDFService.renderThumbnail(pdfDoc, p, 130);
+            const url = await PDFService.renderThumbnail(pdfDoc, p, 114);
             if (isMounted) {
-              setThumbnails((prev) => ({ ...prev, [p]: dataUrl }));
+              setThumbnails((prev) => ({ ...prev, [p]: url }));
             }
           } catch (e) {
-            console.error('Error generating thumbnail for page', p, e);
+            console.error('Thumb render error', p, e);
           }
         }
       }
     };
-
-    generateAll();
+    renderBatch();
     return () => {
       isMounted = false;
     };
   }, [pdfDoc, numPages]);
 
-  // Audio playback handler
+  // Audio Playback
   const handleTogglePlayAudio = (memo: AudioMemo) => {
     if (playingAudioId === memo.id) {
       setPlayingAudioId(null);
       return;
     }
-
     const audio = new Audio(memo.audioBase64);
     setPlayingAudioId(memo.id);
     audio.play();
@@ -173,759 +109,844 @@ export const Sidebar: React.FC<SidebarProps> = ({
     audio.onerror = () => setPlayingAudioId(null);
   };
 
-  const handleCreateTag = (e: React.FormEvent) => {
+  const handleCreateTagSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTagInput.trim()) return;
-    onAddTagToPage(currentPage, newTagInput.trim().replace(/^#/, ''));
+    const clean = newTagInput.trim().replace(/^#/, '');
+    onAddTagToPage(currentPage, clean);
     setNewTagInput('');
+    setShowNewTagField(false);
   };
 
-  if (isCollapsed) {
-    return (
-      <div className={`w-12 border-r flex flex-col items-center py-3 select-none z-30 transition-colors ${
-        isLight ? 'bg-white border-slate-200' : 'bg-[#0A0D14] border-white/[0.08]'
-      }`}>
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className={`p-2 rounded-lg transition-colors mb-4 ${
-            isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-400 hover:text-white'
-          }`}
-          title="Expand Sidebar (Ctrl+\)"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+  const binCount = excludedPages.size;
+  const activeCount = numPages - binCount;
 
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => { setIsCollapsed(false); onChangeTab('thumbnails'); }}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === 'thumbnails'
-                ? 'bg-indigo-600 text-white'
-                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
-            }`}
-            title="Thumbnails"
-          >
-            <Layers className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setIsCollapsed(false); onChangeTab('excluded'); }}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === 'excluded'
-                ? 'bg-rose-600 text-white'
-                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
-            }`}
-            title={`Safety Bin (${excludedPages.size} pruned)`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setIsCollapsed(false); onChangeTab('timeline'); }}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === 'timeline'
-                ? 'bg-indigo-600 text-white'
-                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
-            }`}
-            title="Version History & Snapshots"
-          >
-            <History className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setIsCollapsed(false); onChangeTab('audio'); }}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === 'audio'
-                ? 'bg-rose-600 text-white'
-                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
-            }`}
-            title="Voice Memos"
-          >
-            <Mic className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => { setIsCollapsed(false); onChangeTab('bookmarks'); }}
-            className={`p-2 rounded-lg transition-colors ${
-              activeTab === 'bookmarks'
-                ? 'bg-amber-600 text-white'
-                : isLight ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10'
-            }`}
-            title="Bookmarks & Tags"
-          >
-            <Tag className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
+  // Tab definitions matching the exact SVGs in FocusDeck Workspace
+  const tabDefs = [
+    {
+      id: 'thumbnails' as SidebarTab,
+      label: 'Thumbnails',
+      d: 'M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M15 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z M4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z',
+      badge: false,
+      count: 0
+    },
+    {
+      id: 'excluded' as SidebarTab,
+      label: 'Safety Bin',
+      d: 'M3 4h18a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z M4 8v11a2 2 0 0 0 2 2h2 M20 8v11a2 2 0 0 1-2 2h-2 M9 15l3-3 3 3 M12 12v9',
+      badge: binCount > 0,
+      count: binCount
+    },
+    {
+      id: 'timeline' as SidebarTab,
+      label: 'Timeline & Snapshots',
+      d: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2',
+      badge: snapshots.length > 0,
+      count: snapshots.length
+    },
+    {
+      id: 'bookmarks' as SidebarTab,
+      label: 'Tags & Bookmarks',
+      d: 'M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z M7.5 7.5h.01',
+      badge: false,
+      count: 0
+    },
+    {
+      id: 'audio' as SidebarTab,
+      label: 'Voice Memos',
+      d: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3',
+      badge: audioMemos.length > 0,
+      count: audioMemos.length
+    }
+  ];
+
+  const titles: Record<SidebarTab, [string, string]> = {
+    thumbnails: ['Pages', `${numPages} total · ${activeCount} active`],
+    excluded: ['Safety Bin', `${binCount} pruned`],
+    timeline: ['Timeline', `${snapshots.length} checkpoints`],
+    bookmarks: ['Tags & Bookmarks', `${Object.keys(tags).length} tags · ${bookmarks.length} saved`],
+    audio: ['Voice Memos', `${audioMemos.length} memos`]
+  };
+
+  // Tag aggregation
+  const allTagsMap: Record<string, number> = {};
+  Object.values(tags).forEach((tagList) => {
+    tagList.forEach((t) => {
+      allTagsMap[t] = (allTagsMap[t] || 0) + 1;
+    });
+  });
+
+  // Pages to display in thumbnails
+  let displayedPages = Array.from({ length: numPages }, (_, i) => i + 1);
+  if (selectedTagFilter) {
+    displayedPages = displayedPages.filter((p) => tags[p]?.includes(selectedTagFilter));
   }
 
+  // Pruned pages
+  const prunedList = Array.from(excludedPages).sort((a, b) => a - b);
+  const filteredPrunedList = selectedReasonFilter
+    ? prunedList.filter((p) => (pruneReasons[p] || 'other') === selectedReasonFilter)
+    : prunedList;
+
+  // Reason breakdown counts
+  const reasonCounts: Record<PruneReason, number> = {
+    mastered: 0,
+    syllabus: 0,
+    low_yield: 0,
+    other: 0,
+  };
+  prunedList.forEach((p) => {
+    const r = pruneReasons[p] || 'other';
+    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
+  });
+
   return (
-    <aside className={`w-80 border-r flex flex-col select-none z-30 h-full backdrop-blur-md transition-colors ${
-      isLight ? 'bg-[#F7F7F5] border-slate-200 text-slate-800' : 'bg-[#0A0D14] border-white/[0.08] text-slate-200'
-    }`}>
-      {/* Sidebar Top Nav Tabs (§17.4) */}
-      <div className={`flex items-center justify-between border-b px-2.5 py-2 gap-1 ${
-        isLight ? 'border-slate-200 bg-white/50' : 'border-white/[0.08]'
-      }`}>
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink min-w-0 pr-1">
-          <button
-            onClick={() => onChangeTab('thumbnails')}
-            className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-              activeTab === 'thumbnails'
-                ? isLight ? 'bg-white text-indigo-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Page Thumbnails"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="text-[11px]">Pages</span>
-          </button>
+    <div 
+      className="flex-none select-none transition-all duration-200"
+      style={{
+        width: isCollapsed ? '48px' : '320px',
+        height: '100%',
+        display: 'flex',
+        background: '#131315',
+        color: '#F1EFEA',
+        borderRight: '1px solid rgba(255,255,255,.08)',
+        boxSizing: 'border-box',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Left Icon Rail (48px fixed) */}
+      <nav 
+        role="tablist" 
+        aria-label="Sidebar sections" 
+        aria-orientation="vertical"
+        style={{
+          width: '48px',
+          flex: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '12px 0',
+          boxSizing: 'border-box',
+          background: '#0B0B0D',
+          borderRight: isCollapsed ? 'none' : '1px solid rgba(255,255,255,.08)',
+        }}
+      >
+        {tabDefs.map((t) => {
+          const isSelected = activeTab === t.id && !isCollapsed;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={isSelected}
+              aria-label={t.label}
+              onClick={() => {
+                onChangeTab(t.id);
+                if (isCollapsed) setIsCollapsed(false);
+              }}
+              style={{
+                position: 'relative',
+                width: '36px',
+                height: '36px',
+                padding: 0,
+                border: 0,
+                background: 'none',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                flex: 'none',
+              }}
+              data-tip={t.label}
+            >
+              <svg width="36" height="36" viewBox="0 0 36 36" style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden="true">
+                <rect width="36" height="36" rx="8" fill={isSelected ? 'rgba(241,239,234,.14)' : 'none'} />
+                <rect x="0" y="10" width="2" height="16" rx="1" fill={isSelected ? '#F1EFEA' : 'none'} />
+                <svg 
+                  x="10" 
+                  y="10" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke={isSelected ? '#F1EFEA' : '#A3A09A'} 
+                  strokeWidth="1.75" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d={t.d} />
+                </svg>
+              </svg>
+              {t.badge && (
+                <span 
+                  className="mono" 
+                  style={{
+                    position: 'absolute',
+                    top: '-3px',
+                    right: '-4px',
+                    minWidth: '16px',
+                    height: '16px',
+                    padding: '0 3px',
+                    boxSizing: 'border-box',
+                    borderRadius: '8px',
+                    background: '#E11D48',
+                    color: '#fff',
+                    font: "600 10px/16px 'Geist Mono',monospace",
+                    textAlign: 'center'
+                  }}
+                >
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
 
-          <button
-            onClick={() => onChangeTab('excluded')}
-            className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-              activeTab === 'excluded'
-                ? isLight ? 'bg-rose-100 text-rose-700 font-semibold border border-rose-200' : 'bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/20'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Pruned History & Safety Bin (Restore deleted pages)"
-          >
-            <Trash2 className={`w-3.5 h-3.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-            <span className="text-[11px]">Pruned ({excludedPages.size})</span>
-          </button>
+        <div style={{ flex: 1 }} />
 
-          <button
-            onClick={() => onChangeTab('timeline')}
-            className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-              activeTab === 'timeline'
-                ? isLight ? 'bg-white text-indigo-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-indigo-300 font-semibold shadow-inner'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Snapshots & Rollback"
-          >
-            <History className={`w-3.5 h-3.5 ${isLight ? 'text-indigo-600' : 'text-indigo-400'}`} />
-            <span className="text-[11px]">History</span>
-          </button>
-
-          <button
-            onClick={() => onChangeTab('audio')}
-            className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-              activeTab === 'audio'
-                ? isLight ? 'bg-white text-rose-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-rose-300 font-semibold shadow-inner'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Voice Memos"
-          >
-            <Mic className={`w-3.5 h-3.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-          </button>
-
-          <button
-            onClick={() => onChangeTab('bookmarks')}
-            className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
-              activeTab === 'bookmarks'
-                ? isLight ? 'bg-white text-amber-700 font-semibold shadow-xs border border-slate-200' : 'bg-[#171C29] text-amber-300 font-semibold shadow-inner'
-                : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Bookmarks & Study Tags"
-          >
-            <Tag className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
-          </button>
-        </div>
-
+        {/* Collapse / Expand Toggle Button */}
         <button
-          onClick={() => setIsCollapsed(true)}
-          className={`p-1 rounded shrink-0 transition-colors cursor-pointer ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-500 hover:text-slate-300'}`}
-          title="Collapse Sidebar (Ctrl+\)"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          data-tip={isCollapsed ? 'Expand sidebar · Ctrl \\' : 'Collapse sidebar · Ctrl \\'}
+          style={{
+            width: '36px',
+            height: '36px',
+            padding: 0,
+            border: 0,
+            background: 'none',
+            borderRadius: '8px',
+            color: '#98A0B6',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M9 3v18" />
+          </svg>
         </button>
-      </div>
+      </nav>
 
-      {/* Tab 1: Thumbnails Grid */}
-      {activeTab === 'thumbnails' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className={`flex items-center justify-between text-[11px] px-1 mb-1 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
-            <span>{numPages - excludedPages.size} of {numPages} Active</span>
-            <div className={`flex items-center gap-1 rounded-md p-0.5 border text-[10px] ${
-              isLight ? 'bg-slate-200/60 border-slate-300' : 'bg-white/5 border-white/10'
-            }`}>
-              <button
-                onClick={() => setFilterMode('active')}
-                className={`px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer ${
-                  filterMode === 'active'
-                    ? isLight ? 'bg-white text-indigo-700 shadow-xs' : 'bg-indigo-600 text-white shadow-xs'
-                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Show only active kept pages (hide deleted)"
-              >
-                Active Only
-              </button>
-              <button
-                onClick={() => setFilterMode('all')}
-                className={`px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer ${
-                  filterMode === 'all'
-                    ? isLight ? 'bg-white text-indigo-700 shadow-xs' : 'bg-indigo-600 text-white shadow-xs'
-                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Show all pages including pruned"
-              >
-                All ({numPages})
-              </button>
-            </div>
-          </div>
+      {/* Right Drawer Panel (visible when expanded) */}
+      {!isCollapsed && (
+        <section 
+          role="tabpanel" 
+          aria-label={titles[activeTab][0]}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Drawer Header */}
+          <header 
+            style={{
+              height: '56px',
+              flex: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 16px',
+              boxSizing: 'border-box'
+            }}
+          >
+            <span style={{ font: "400 21px/1 'Instrument Serif',Georgia,serif", letterSpacing: '-.005em', color: '#F1EFEA' }}>
+              {titles[activeTab][0]}
+            </span>
+            <span style={{ font: "500 11px/1 'Geist Mono',monospace", color: '#A3A09A' }}>
+              {titles[activeTab][1]}
+            </span>
+          </header>
 
-          {numPages - excludedPages.size === 0 && filterMode === 'active' ? (
-            <div className="text-center py-12 text-xs">
-              <Trash2 className="w-8 h-8 text-rose-500/60 mx-auto mb-2" />
-              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>All Pages Pruned</p>
-              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
-                All pages are saved safely in your Pruned History.
-              </p>
-              <button
-                onClick={() => onChangeTab('excluded')}
-                className="mt-3 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer shadow-md shadow-indigo-600/30"
-              >
-                Open Pruned History
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2.5">
-              {Array.from({ length: numPages }, (_, i) => i + 1)
-                .filter((p) => filterMode === 'all' || !excludedPages.has(p))
-                .map((p, idx) => {
-                  const isExcluded = excludedPages.has(p);
-                  const isCurrent = currentPage === p;
-                  const hasBookmark = bookmarks.includes(p);
-                  const pageTags = tags[p] || [];
+          <div 
+            style={{
+              flex: 1,
+              minHeight: 0,
+              padding: '0 16px 16px',
+              boxSizing: 'border-box',
+              overflowY: 'auto'
+            }}
+          >
+            {/* TAB 1: THUMBNAILS */}
+            {activeTab === 'thumbnails' && (
+              <div>
+                <div style={{ fontSize: '11px', color: '#A3A09A', margin: '-2px 0 12px' }}>
+                  Click to open · Hover to prune
+                </div>
+                <div 
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    columnGap: '12px',
+                    rowGap: '10px'
+                  }}
+                >
+                  {displayedPages.map((n) => {
+                    const isPruned = excludedPages.has(n);
+                    const isActive = n === currentPage;
+                    const isBm = bookmarks.includes(n);
+                    const pageTags = tags[n] || [];
+                    const thumbUrl = thumbnails[n];
 
-                  return (
-                    <div
-                      key={p}
-                      onClick={() => onSelectPage(p)}
-                      className={`group relative rounded-lg border overflow-hidden cursor-pointer transition-all ${
-                        isCurrent
-                          ? isLight ? 'border-indigo-600 ring-2 ring-indigo-500/30 shadow-md bg-white' : 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg bg-[#11151F]'
-                          : isExcluded
-                          ? isLight ? 'border-rose-200 opacity-55 bg-rose-50 hover:opacity-80' : 'border-rose-900/40 opacity-45 bg-rose-950/20 hover:opacity-75'
-                          : isLight ? 'border-slate-200 hover:border-slate-300 bg-white shadow-xs' : 'border-white/10 hover:border-white/20 bg-[#11151F]/70'
-                      }`}
-                    >
-                      {/* Thumbnail Image */}
-                      <div className={`aspect-[3/4] flex items-center justify-center overflow-hidden relative ${
-                        isLight ? 'bg-slate-100' : 'bg-[#0A0D14]'
-                      }`}>
-                        {thumbnails[p] ? (
-                          <img
-                            src={thumbnails[p]}
-                            alt={`Page ${p}`}
-                            className={`w-full h-full object-contain ${isExcluded ? 'grayscale' : ''}`}
-                          />
-                        ) : (
-                          <div className={`text-xs font-mono animate-pulse ${isLight ? 'text-slate-400' : 'text-slate-700'}`}>
-                            Loading...
-                          </div>
-                        )}
-
-                        {/* Excluded Overlay Badge */}
-                        {isExcluded && (
-                          <div className={`absolute inset-0 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px] ${
-                            isLight ? 'bg-rose-50/80' : 'bg-rose-950/70'
-                          }`}>
-                            <Trash2 className={`w-5 h-5 mb-1 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-rose-700' : 'text-rose-300'}`}>
-                              Pruned
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Bookmark indicator */}
-                        {hasBookmark && (
-                          <div className="absolute top-1 left-1 bg-amber-500 text-slate-950 p-0.5 rounded shadow">
-                            <Bookmark className="w-3 h-3 fill-current" />
-                          </div>
-                        )}
-
-                        {/* Hover Toggle Prune Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleExcludePage(p);
+                    return (
+                      <div key={n} className="cursor-pointer" onClick={() => onSelectPage(n)}>
+                        <div 
+                          style={{
+                            position: 'relative',
+                            width: '114px',
+                            height: '148px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            background: '#fff',
+                            boxShadow: '0 2px 6px rgba(0,0,0,.15)'
                           }}
-                          className={`absolute top-1 right-1 p-1 rounded-md transition-opacity shadow-md cursor-pointer ${
-                            isExcluded
-                              ? 'bg-emerald-600 text-white opacity-100 hover:bg-emerald-500'
-                              : 'bg-rose-600/90 text-white opacity-0 group-hover:opacity-100 hover:bg-rose-500'
-                          }`}
-                          title={isExcluded ? 'Restore Page' : 'Prune this Page'}
                         >
-                          {isExcluded ? (
-                            <RotateCcw className="w-3 h-3" />
+                          {/* Live Rendered Canvas or Skeleton SVG */}
+                          {thumbUrl ? (
+                            <img 
+                              src={thumbUrl} 
+                              alt={`Page ${n}`}
+                              className="w-full h-full object-cover" 
+                            />
                           ) : (
-                            <Trash2 className="w-3 h-3" />
+                            <svg width="114" height="148" viewBox="0 0 114 148" aria-hidden="true">
+                              <rect x="10" y="12" width="52" height="5" rx="1" fill="#0E1220" opacity=".85" />
+                              <rect x="10" y="24" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="31" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="38" width="88" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="45" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="52" width="60" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="66" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="73" width="90" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="80" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="87" width="70" height="3" rx="1.5" fill="#D3D6DF" />
+                              <rect x="10" y="108" width="94" height="3" rx="1.5" fill="#D3D6DF" />
+                            </svg>
                           )}
-                        </button>
-                      </div>
 
-                      {/* Card Footer */}
-                      <div className={`px-2 py-1 flex items-center justify-between text-[11px] ${
-                        isLight ? 'bg-slate-50 border-t border-slate-100' : 'bg-[#0A0D14]'
-                      }`}>
-                        <span className={`font-mono font-medium ${isCurrent ? 'text-indigo-600 font-semibold' : isLight ? 'text-slate-700' : 'text-slate-400'}`}>
-                          {filterMode === 'active' ? `Deck #${idx + 1}` : `p. ${p}`}
-                        </span>
+                          {/* Pruned Diagonal Hatch Shield */}
+                          {isPruned && (
+                            <div 
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'repeating-linear-gradient(135deg,rgba(225,29,72,.34) 0 6px,rgba(225,29,72,.5) 6px 12px)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <span 
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  background: '#0B0B0D',
+                                  color: '#FDA4AF',
+                                  font: "600 9px/1 'Geist',sans-serif",
+                                  letterSpacing: '.14em'
+                                }}
+                              >
+                                PRUNED
+                              </span>
+                            </div>
+                          )}
 
-                        {pageTags.length > 0 ? (
-                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                            isLight ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
-                          }`}>
-                            #{pageTags[0]}
+                          {/* Bookmark Ribbon */}
+                          {isBm && (
+                            <svg width="14" height="20" viewBox="0 0 14 20" style={{ position: 'absolute', right: '8px', top: 0 }} aria-label="Bookmarked" role="img">
+                              <path d="M0 0h14v20l-7-5-7 5z" fill="#F59E0B" />
+                            </svg>
+                          )}
+
+                          {/* Active Ring - 2px Bone Ring per ui.md §6 */}
+                          <svg width="114" height="148" viewBox="0 0 114 148" style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }} aria-hidden="true">
+                            <rect 
+                              x="1" 
+                              y="1" 
+                              width="112" 
+                              height="146" 
+                              rx="7" 
+                              fill="none" 
+                              stroke={isActive ? '#F1EFEA' : 'rgba(255,255,255,.1)'} 
+                              strokeWidth={isActive ? 2 : 1} 
+                            />
+                          </svg>
+                        </div>
+
+                        {/* Page label and tag pills below thumbnail */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '20px', marginTop: '6px' }}>
+                          <span 
+                            className="mono" 
+                            style={{ 
+                              fontSize: '11px', 
+                              fontWeight: 500, 
+                              color: isActive ? '#F1EFEA' : '#A3A09A' 
+                            }}
+                          >
+                            {(n < 10 ? '0' : '') + n}
                           </span>
-                        ) : filterMode === 'active' ? (
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            p.{p}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 2: Pruned History & Safety Bin with Batch Select / Invert */}
-      {activeTab === 'excluded' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className={`p-3 rounded-xl border text-xs ${
-            isLight
-              ? 'bg-rose-50/80 border-rose-200 text-rose-800'
-              : 'bg-rose-950/20 border-rose-900/30 text-rose-300'
-          }`}>
-            <div className={`flex items-center gap-1.5 font-semibold mb-1 ${isLight ? 'text-rose-900' : 'text-rose-200'}`}>
-              <ShieldAlert className={`w-4 h-4 ${isLight ? 'text-rose-600' : 'text-rose-400'}`} />
-              <span>Pruned History & Safety Bin</span>
-            </div>
-            <p className={`text-[11px] leading-relaxed mb-2.5 ${isLight ? 'text-rose-700' : 'text-rose-300/80'}`}>
-              Pages deleted from the active deck are safely preserved here. Select pages to restore them individually or in bulk.
-            </p>
-
-            {excludedPages.size > 0 && (
-              <div className="space-y-2">
-                {/* Batch Action Toolbar */}
-                <div className={`flex items-center justify-between gap-1 p-1.5 rounded-lg border text-[11px] ${
-                  isLight ? 'bg-white border-rose-200 text-slate-700' : 'bg-[#11151F] border-white/10 text-slate-300'
-                }`}>
-                  <button
-                    onClick={handleSelectAllPruned}
-                    className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1 font-medium transition-colors cursor-pointer"
-                    title="Select all pruned pages"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Select All</span>
-                  </button>
-
-                  <button
-                    onClick={handleInvertPrunedSelection}
-                    className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1 font-medium transition-colors cursor-pointer"
-                    title="Invert current selection"
-                  >
-                    <RotateCcw className="w-3 h-3 text-amber-500" />
-                    <span>Revert Selection</span>
-                  </button>
-
-                  {selectedPruned.size > 0 && (
-                    <button
-                      onClick={handleClearPrunedSelection}
-                      className="px-1.5 py-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                      title="Clear selection"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                {/* Restore Buttons */}
-                <div className="flex items-center gap-1.5">
-                  {selectedPruned.size > 0 ? (
-                    <button
-                      onClick={handleRestoreSelectedPruned}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" /> Restore Selected ({selectedPruned.size})
-                    </button>
-                  ) : null}
-
-                  <button
-                    onClick={onRestoreAllPruned}
-                    className={`py-1.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
-                      selectedPruned.size > 0
-                        ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
-                        : 'flex-1 bg-rose-600 hover:bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-600/30'
-                    }`}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> Restore All ({excludedPages.size})
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {excludedPages.size === 0 ? (
-            <div className="text-center py-12 text-xs">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500/60 mx-auto mb-2" />
-              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>History Empty</p>
-              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
-                No pages have been pruned yet. Delete pages from the viewer to remove them from your active deck.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {Array.from(excludedPages).sort((a, b) => a - b).map((p) => {
-                const currentReason: PruneReason = pruneReasons[p] || 'other';
-                const isChecked = selectedPruned.has(p);
-
-                return (
-                  <div
-                    key={p}
-                    onClick={() => handleToggleSelectPruned(p)}
-                    className={`p-2.5 rounded-xl border text-xs space-y-2 transition-all cursor-pointer ${
-                      isChecked
-                        ? isLight
-                          ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-400'
-                          : 'bg-indigo-950/30 border-indigo-500/50 ring-1 ring-indigo-500/30'
-                        : isLight
-                        ? 'bg-white border-slate-200 text-slate-800 shadow-xs hover:border-slate-300'
-                        : 'bg-[#11151F] border-white/10 text-slate-200 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {/* Checkbox */}
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => handleToggleSelectPruned(p)}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        />
-
-                        {/* Thumbnail snippet if available */}
-                        {thumbnails[p] ? (
-                          <img
-                            src={thumbnails[p]}
-                            alt={`Preview page ${p}`}
-                            className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900/40"
-                          />
-                        ) : (
-                          <span className={`w-8 h-10 rounded flex items-center justify-center font-mono text-[11px] border ${
-                            isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#171C29] text-slate-300 border-white/10'
-                          }`}>
-                            {p}
-                          </span>
-                        )}
-
-                        <div>
-                          <span className={`font-semibold block ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                            Page {p}
-                          </span>
-                          <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Pruned from deck
-                          </span>
+                          {pageTags[0] && (
+                            <span 
+                              style={{
+                                padding: '3px 6px',
+                                borderRadius: '4px',
+                                background: 'rgba(245,158,11,.14)',
+                                color: '#FBBF24',
+                                font: "500 10px/1 'Geist',sans-serif"
+                              }}
+                            >
+                              #{pageTags[0]}
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      {/* Direct Single Restore Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleExcludePage(p);
-                        }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
-                          isLight
-                            ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'
-                            : 'bg-emerald-600/20 hover:bg-emerald-600/40 border-emerald-500/40 text-emerald-300'
-                        }`}
-                        title="Restore this page back into the active PDF deck"
-                      >
-                        <RotateCcw className="w-3 h-3" /> Restore
-                      </button>
-                    </div>
-
-                    {/* Prune Reason Selector */}
-                    {onUpdatePruneReason && (
-                      <div 
-                        onClick={(e) => e.stopPropagation()} 
-                        className={`flex items-center gap-1.5 pt-1.5 border-t ${isLight ? 'border-slate-100' : 'border-white/5'}`}
-                      >
-                        <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Reason:</span>
-                        <select
-                          value={currentReason}
-                          onChange={(e) => onUpdatePruneReason(p, e.target.value as PruneReason)}
-                          className={`text-[10px] rounded px-1.5 py-0.5 outline-none border focus:border-indigo-500 ${
-                            isLight
-                              ? 'bg-slate-50 text-slate-800 border-slate-200'
-                              : 'bg-[#171C29] text-slate-300 border-white/10'
-                          }`}
-                        >
-                          {Object.entries(PRUNE_REASONS_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 3: Version History & Snapshots (§17.4 & §17.7) */}
-      {activeTab === 'timeline' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {/* Quick link to Pruned History */}
-          {excludedPages.size > 0 && (
-            <div 
-              onClick={() => onChangeTab('excluded')}
-              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition-colors ${
-                isLight ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100' : 'bg-rose-950/30 border-rose-900/40 text-rose-300 hover:bg-rose-950/50'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Trash2 className="w-4 h-4 text-rose-500" />
-                <div>
-                  <span className="font-semibold block">{excludedPages.size} Deleted / Pruned Pages</span>
-                  <span className="text-[10px] opacity-75">Click to view, batch select & restore</span>
+                    );
+                  })}
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 opacity-60" />
-            </div>
-          )}
+            )}
 
-          <div className={`flex items-center justify-between text-xs px-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Timeline Snapshots</span>
-            <span className="text-[11px]">{snapshots.length} saved</span>
-          </div>
-
-          {snapshots.length === 0 ? (
-            <div className="text-center py-12 text-xs">
-              <History className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-indigo-400' : 'text-indigo-500/40'}`} />
-              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>No Snapshots Yet</p>
-              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
-                Save a checkpoint before batch operations to revert anytime.
-              </p>
-            </div>
-          ) : (
-            <div className={`space-y-2.5 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 ${
-              isLight ? 'before:bg-slate-200' : 'before:bg-white/10'
-            }`}>
-              {snapshots.map((snap) => (
-                <div
-                  key={snap.id}
-                  className="relative pl-6 group text-xs"
+            {/* TAB 2: SAFETY BIN */}
+            {activeTab === 'excluded' && (
+              <div>
+                <button 
+                  onClick={onRestoreAllPruned}
+                  disabled={binCount === 0}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(52,211,153,.4)',
+                    background: 'rgba(52,211,153,.08)',
+                    color: '#6EE7B7',
+                    font: "500 13px/1 'Geist',sans-serif",
+                    cursor: 'pointer'
+                  }}
                 >
-                  <div className={`absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full border-2 border-indigo-500 group-hover:scale-125 transition-transform ${
-                    isLight ? 'bg-white' : 'bg-[#0A0D14]'
-                  }`} />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  Restore all {binCount} pages
+                </button>
 
-                  <div className={`p-2.5 rounded-xl border transition-colors ${
-                    isLight ? 'bg-white border-slate-200 hover:border-indigo-400 shadow-xs' : 'bg-[#11151F] border-white/10 hover:border-indigo-500/40'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                          {snap.name}
-                        </span>
-                        {snap.isAuto && (
-                          <span className={`text-[9px] font-mono px-1 py-0.2 rounded border ${
-                            isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                          }`}>
-                            Auto
-                          </span>
-                        )}
-                      </div>
-                      <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                        {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                {/* Reason filter pills */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '14px 0 12px' }}>
+                  {(['mastered', 'syllabus', 'low_yield', 'other'] as PruneReason[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setSelectedReasonFilter(selectedReasonFilter === r ? null : r)}
+                      style={{
+                        padding: '5px 8px',
+                        borderRadius: '6px',
+                        background: selectedReasonFilter === r ? 'rgba(241,239,234,.14)' : 'rgba(255,255,255,.05)',
+                        border: selectedReasonFilter === r ? '1px solid #F1EFEA' : '1px solid transparent',
+                        font: "500 11px/1 'Geist',sans-serif",
+                        color: selectedReasonFilter === r ? '#F1EFEA' : '#A3A09A',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {PRUNE_REASON_LABELS[r]} <span className="mono" style={{ color: '#A3A09A', marginLeft: '4px' }}>{reasonCounts[r]}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Pruned List Rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {filteredPrunedList.length === 0 ? (
+                    <div className="text-xs text-[#A3A09A] py-8 text-center italic font-serif" style={{ fontFamily: 'Newsreader, Georgia, serif', fontSize: '13px' }}>
+                      No pruned pages in this category.
                     </div>
+                  ) : (
+                    filteredPrunedList.map((p) => {
+                      const reason = pruneReasons[p] || 'other';
+                      return (
+                        <div 
+                          key={p} 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px',
+                            borderRadius: '10px',
+                            background: '#1A1A1D',
+                            border: '1px solid rgba(255,255,255,.08)'
+                          }}
+                        >
+                          {/* Mini Thumbnail with rose tint */}
+                          <svg width="32" height="42" viewBox="0 0 32 42" aria-hidden="true">
+                            <rect width="32" height="42" rx="4" fill="#fff" />
+                            <rect x="5" y="6" width="14" height="2" fill="#0E1220" />
+                            <rect x="5" y="13" width="22" height="2" fill="#D3D6DF" />
+                            <rect x="5" y="19" width="22" height="2" fill="#D3D6DF" />
+                            <rect x="5" y="25" width="16" height="2" fill="#D3D6DF" />
+                            <rect width="32" height="42" rx="4" fill="rgba(225,29,72,.4)" />
+                          </svg>
 
-                    {snap.description && (
-                      <p className={`text-[11px] mb-2 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                        {snap.description}
-                      </p>
-                    )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ font: "500 13px/1.2 'Geist',sans-serif" }}>Page {p}</div>
+                            {onUpdatePruneReason ? (
+                              <select
+                                value={reason}
+                                onChange={(e) => onUpdatePruneReason(p, e.target.value as PruneReason)}
+                                className="bg-transparent text-[11px] text-[#98A0B6] border-none outline-none cursor-pointer p-0 mt-1"
+                              >
+                                <option value="mastered">Already mastered</option>
+                                <option value="syllabus">Out of syllabus</option>
+                                <option value="low_yield">Low-yield proof</option>
+                                <option value="other">Other reason</option>
+                              </select>
+                            ) : (
+                              <div style={{ marginTop: '4px', fontSize: '11px', color: '#98A0B6' }}>
+                                {PRUNE_REASON_LABELS[reason]}
+                              </div>
+                            )}
+                          </div>
 
-                    <div className={`flex items-center justify-between pt-1 border-t text-[10px] ${
-                      isLight ? 'border-slate-100 text-slate-500' : 'border-white/10 text-slate-500'
-                    }`}>
-                      <span>{snap.excludedPages.length} Pruned Pages</span>
-                      <button
+                          <button 
+                            aria-label={`Restore page ${p}`}
+                            onClick={() => onToggleExcludePage(p)}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              padding: 0,
+                              borderRadius: '8px',
+                              border: '1px solid rgba(52,211,153,.4)',
+                              background: 'none',
+                              color: '#6EE7B7',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                              <path d="M3 3v5h5" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: TIMELINE */}
+            {activeTab === 'timeline' && (
+              <div>
+                <div style={{ position: 'relative', marginTop: '4px', paddingLeft: '20px' }}>
+                  <div style={{ position: 'absolute', left: '5px', top: '8px', bottom: '8px', width: '1px', background: 'rgba(255,255,255,.12)' }} />
+
+                  {/* Current Live State */}
+                  <div style={{ position: 'relative', marginBottom: '12px', padding: '12px', borderRadius: '12px', background: '#1A1A1D', border: '1px solid rgba(255,255,255,.08)' }}>
+                    <svg width="11" height="11" viewBox="0 0 11 11" style={{ position: 'absolute', left: '-20px', top: '16px' }} aria-hidden="true">
+                      <circle cx="5.5" cy="5.5" r="4.5" fill="#F1EFEA" stroke="#131315" strokeWidth="2" />
+                    </svg>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <span style={{ font: "500 13px/1.2 'Geist',sans-serif" }}>Current workspace</span>
+                      <span style={{ padding: '3px 6px', borderRadius: '4px', background: 'rgba(241,239,234,.14)', color: '#F1EFEA', font: "600 9px/1 'Geist',sans-serif", letterSpacing: '.1em' }}>LIVE</span>
+                    </div>
+                    <div className="mono" style={{ marginTop: '4px', font: "400 11px/1 'Geist Mono',monospace", color: '#A3A09A' }}>Now</div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', font: "500 11px/1 'Geist Mono',monospace", color: '#F1EFEA' }}>
+                      <span>{activeCount} kept</span>
+                      <span style={{ color: '#FDA4AF' }}>{binCount} pruned</span>
+                    </div>
+                  </div>
+
+                  {/* Saved Snapshots */}
+                  {snapshots.map((snap) => (
+                    <div 
+                      key={snap.id}
+                      style={{
+                        position: 'relative',
+                        marginBottom: '12px',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        background: '#1A1A1D',
+                        border: '1px solid rgba(255,255,255,.08)'
+                      }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 11 11" style={{ position: 'absolute', left: '-20px', top: '16px' }} aria-hidden="true">
+                        <circle cx="5.5" cy="5.5" r="4.5" fill="#A3A09A" stroke="#131315" strokeWidth="2" />
+                      </svg>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span style={{ font: "500 13px/1.2 'Geist',sans-serif" }}>{snap.name}</span>
+                      </div>
+                      <div className="mono" style={{ marginTop: '4px', font: "400 11px/1 'Geist Mono',monospace", color: '#A3A09A' }}>
+                        {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', font: "500 11px/1 'Geist Mono',monospace", color: '#F1EFEA' }}>
+                        <span>{numPages - (snap.excludedPages?.length || 0)} kept</span>
+                        <span style={{ color: '#FDA4AF' }}>{snap.excludedPages?.length || 0} pruned</span>
+                      </div>
+                      {snap.description && (
+                        <div style={{ marginTop: '8px', fontSize: '12px', lineHeight: 1.45, color: '#A3A09A' }}>
+                          {snap.description}
+                        </div>
+                      )}
+                      <button 
                         onClick={() => onRollbackSnapshot(snap.id)}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
-                          isLight ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700' : 'bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300'
-                        }`}
+                        style={{
+                          marginTop: '10px',
+                          height: '28px',
+                          padding: '0 10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(251,113,133,.45)',
+                          background: 'rgba(251,113,133,.08)',
+                          color: '#FDA4AF',
+                          font: "500 12px/1 'Geist',sans-serif",
+                          cursor: 'pointer'
+                        }}
                       >
-                        <RotateCcw className="w-2.5 h-2.5" /> Rollback
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                          <path d="M3 3v5h5" />
+                        </svg>
+                        Rollback
                       </button>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 4: Audio Memos */}
-      {activeTab === 'audio' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <div className={`flex items-center justify-between text-xs px-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-            <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Voice Memos</span>
-            <span className="text-[11px]">{audioMemos.length} memos</span>
-          </div>
-
-          {audioMemos.length === 0 ? (
-            <div className="text-center py-12 text-xs">
-              <Mic className={`w-8 h-8 mx-auto mb-2 ${isLight ? 'text-rose-400' : 'text-rose-500/40'}`} />
-              <p className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>No Voice Memos</p>
-              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-600'}`}>
-                Click "Voice Memo" in the toolbar to record verbal notes for any page.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {audioMemos.map((memo) => (
-                <div
-                  key={memo.id}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                    isLight ? 'bg-white border-slate-200 text-slate-800 shadow-xs' : 'bg-[#11151F] border-white/10 text-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      onClick={() => handleTogglePlayAudio(memo)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                        playingAudioId === memo.id
-                          ? 'bg-rose-500 text-white animate-pulse'
-                          : isLight ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
-                      }`}
-                    >
-                      {playingAudioId === memo.id ? (
-                        <Pause className="w-3.5 h-3.5" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                      )}
-                    </button>
-
-                    <div>
-                      <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                        {memo.title || `Voice Note (Page ${memo.pageNumber})`}
-                      </div>
-                      <div className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-                        Page {memo.pageNumber} • {memo.durationSeconds}s
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => onSelectPage(memo.pageNumber)}
-                      className={`p-1 rounded ${isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-800' : 'hover:bg-white/10 text-slate-400 hover:text-slate-200'}`}
-                      title="Jump to Page"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteAudioMemo(memo.id)}
-                      className={`p-1 rounded ${isLight ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-600' : 'hover:bg-rose-500/20 text-slate-500 hover:text-rose-400'}`}
-                      title="Delete Memo"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                <div style={{ marginTop: '4px', fontSize: '11px', lineHeight: 1.5, color: '#98A0B6' }}>
+                  Rollback restores previous annotations and page exclusions safely.
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
 
-      {/* Tab 5: Bookmarks & Study Tags */}
-      {activeTab === 'bookmarks' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          <div>
-            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
-              Bookmarked Pages
-            </span>
-            {bookmarks.length === 0 ? (
-              <p className={`text-[11px] italic ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>No pages bookmarked yet.</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {bookmarks.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => onSelectPage(p)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer border ${
-                      isLight
-                        ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                        : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                    }`}
+            {/* TAB 4: TAGS & BOOKMARKS */}
+            {activeTab === 'bookmarks' && (
+              <div>
+                <div className="lbl" style={{ font: "500 10px/1 'Geist',sans-serif", letterSpacing: '.08em', textTransform: 'uppercase', color: '#98A0B6', marginBottom: '10px' }}>
+                  Quick tags
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['HighYield', 'Formula', 'ExamDoubt'].map((tagName) => {
+                    const isSelected = selectedTagFilter === tagName;
+                    const count = allTagsMap[tagName] || 0;
+                    return (
+                      <button
+                        key={tagName}
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedTagFilter(isSelected ? null : tagName)}
+                        style={{
+                          height: '30px',
+                          padding: '0 12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1px solid rgba(245,158,11,.55)' : '1px solid rgba(255,255,255,.14)',
+                          background: isSelected ? 'rgba(245,158,11,.14)' : 'none',
+                          color: isSelected ? '#FBBF24' : '#E8EAF2',
+                          font: "500 12px/1 'Geist',sans-serif",
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isSelected && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        )}
+                        #{tagName}
+                        <span className="mono" style={{ font: "500 11px/1 'Geist Mono',monospace", color: isSelected ? '#E8EAF2' : '#98A0B6' }}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  <button 
+                    onClick={() => setShowNewTagField((prev) => !prev)}
+                    style={{
+                      height: '30px',
+                      padding: '0 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '8px',
+                      border: '1px dashed rgba(255,255,255,.2)',
+                      background: 'none',
+                      color: '#98A0B6',
+                      font: "500 12px/1 'Geist',sans-serif",
+                      cursor: 'pointer'
+                    }}
                   >
-                    <Bookmark className="w-3 h-3 fill-current" /> Page {p}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                      <path d="M5 12h14 M12 5v14" />
+                    </svg>
+                    New tag
                   </button>
-                ))}
+                </div>
+
+                {showNewTagField && (
+                  <form onSubmit={handleCreateTagSubmit} className="mt-2.5 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. BarQuestion"
+                      value={newTagInput}
+                      onChange={(e) => setNewTagInput(e.target.value)}
+                      className="flex-1 h-8 rounded px-2.5 bg-[#171C29] border border-white/10 text-white text-xs outline-none focus:border-[#818CF8]"
+                    />
+                    <button type="submit" className="btn primary text-xs px-3 h-8">Add</button>
+                  </form>
+                )}
+
+                {selectedTagFilter && (
+                  <div style={{ marginTop: '14px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)', fontSize: '12px', lineHeight: 1.45, color: '#E8EAF2' }}>
+                    Showing <span className="mono" style={{ color: '#FBBF24' }}>{displayedPages.length}</span> of {numPages} pages tagged #{selectedTagFilter}. <span style={{ color: '#98A0B6' }}>Click tag again to clear.</span>
+                  </div>
+                )}
+
+                <div style={{ font: "500 10px/1 'Geist',sans-serif", letterSpacing: '.08em', textTransform: 'uppercase', color: '#98A0B6', margin: '22px 0 10px' }}>
+                  Bookmarks
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {bookmarks.length === 0 ? (
+                    <div className="text-xs text-[#98A0B6] py-3 text-center">No bookmarked pages yet. Press B to bookmark.</div>
+                  ) : (
+                    bookmarks.map((bmPage) => (
+                      <div 
+                        key={bmPage} 
+                        onClick={() => onSelectPage(bmPage)}
+                        className="cursor-pointer hover:border-white/20 transition-all"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          background: '#171C29',
+                          border: '1px solid rgba(255,255,255,.08)'
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span style={{ flex: 1, minWidth: 0, font: "500 12.5px/1.3 'Geist',sans-serif" }}>
+                          Page {bmPage}
+                        </span>
+                        <span className="mono" style={{ font: "500 11px/1 'Geist Mono',monospace", color: '#98A0B6' }}>
+                          p.{bmPage}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: VOICE MEMOS */}
+            {activeTab === 'audio' && (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {audioMemos.length === 0 ? (
+                    <div className="text-xs text-[#98A0B6] py-8 text-center">
+                      No voice memos recorded yet. Use the Mic tool on any page to record spoken summaries.
+                    </div>
+                  ) : (
+                    audioMemos.map((memo) => {
+                      const isPlaying = playingAudioId === memo.id;
+                      return (
+                        <div 
+                          key={memo.id}
+                          style={{
+                            padding: '12px',
+                            borderRadius: '12px',
+                            background: '#1A1A1D',
+                            border: '1px solid rgba(255,255,255,.08)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ font: "500 13px/1.25 'Geist',sans-serif", color: '#F1EFEA' }}>{memo.title || 'Revision Memo'}</span>
+                            <button 
+                              onClick={() => onSelectPage(memo.pageNumber)}
+                              style={{
+                                height: '22px',
+                                padding: '0 7px',
+                                borderRadius: '5px',
+                                border: '1px solid rgba(255,255,255,.14)',
+                                background: 'none',
+                                color: '#A3A09A',
+                                font: "500 10.5px/1 'Geist Mono',monospace",
+                                cursor: 'pointer'
+                              }}
+                            >
+                              p.{memo.pageNumber}
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                            <button 
+                              onClick={() => handleTogglePlayAudio(memo)}
+                              aria-label={`Play ${memo.title}`}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                padding: 0,
+                                flex: 'none',
+                                borderRadius: '50%',
+                                border: 0,
+                                background: '#F1EFEA',
+                                color: '#151513',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'transform 120ms ease, background-color 120ms ease'
+                              }}
+                            >
+                              {isPlaying ? (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                  <rect x="6" y="4" width="4" height="16" />
+                                  <rect x="14" y="4" width="4" height="16" />
+                                </svg>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                  <path d="M6 3l14 9-14 9z" />
+                                </svg>
+                              )}
+                            </button>
+
+                            {/* Audio Waveform SVG */}
+                            <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '32px' }}>
+                              <svg width="100%" height="32" viewBox="0 0 141 32" preserveAspectRatio="none" style={{ position: 'absolute', left: 0, top: 0 }} aria-hidden="true">
+                                <path d={WAVE_PATH} stroke="rgba(255,255,255,.22)" strokeWidth="2" strokeLinecap="round" fill="none" />
+                              </svg>
+                              {isPlaying && (
+                                <div style={{ position: 'absolute', left: 0, top: 0, width: '60%', height: '32px', overflow: 'hidden' }}>
+                                  <svg width="263" height="32" viewBox="0 0 141 32" preserveAspectRatio="none" style={{ display: 'block' }} aria-hidden="true">
+                                    <path d={WAVE_PATH} stroke="#F1EFEA" strokeWidth="2" strokeLinecap="round" fill="none" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mono" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', font: "400 10.5px/1 'Geist Mono',monospace", color: '#98A0B6' }}>
+                            <span>{isPlaying ? 'Playing...' : '0:00'}</span>
+                            <span>{Math.floor(memo.durationSeconds / 60)}:{(memo.durationSeconds % 60 < 10 ? '0' : '') + (memo.durationSeconds % 60)}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             )}
           </div>
-
-          <div className={`border-t pt-3 ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
-            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
-              Add Tag to Page {currentPage}
-            </span>
-            <form onSubmit={handleCreateTag} className="flex gap-1.5 mb-3">
-              <input
-                type="text"
-                placeholder="e.g. Formula, HighYield"
-                value={newTagInput}
-                onChange={(e) => setNewTagInput(e.target.value)}
-                className={`flex-1 rounded-lg px-2.5 py-1 text-xs outline-none border focus:border-indigo-500 ${
-                  isLight
-                    ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
-                    : 'bg-[#11151F] border-white/15 text-white placeholder-slate-500'
-                }`}
-              />
-              <button
-                type="submit"
-                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium cursor-pointer"
-              >
-                Tag
-              </button>
-            </form>
-
-            <span className={`text-xs font-semibold block mb-2 ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
-              All Study Tags
-            </span>
-            <div className="space-y-1.5">
-              {Object.entries(tags).map(([pStr, pageTags]) => {
-                const pNum = Number(pStr);
-                return pageTags.map((t) => (
-                  <div
-                    key={`${pNum}-${t}`}
-                    onClick={() => onSelectPage(pNum)}
-                    className={`flex items-center justify-between p-1.5 rounded-lg border text-xs cursor-pointer transition-colors ${
-                      isLight
-                        ? 'bg-white border-slate-200 hover:border-indigo-400 text-slate-800 shadow-xs'
-                        : 'bg-[#11151F] border-white/10 hover:border-indigo-400 text-slate-200'
-                    }`}
-                  >
-                    <span className="text-indigo-600 font-mono font-medium">#{t}</span>
-                    <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Page {pNum}</span>
-                  </div>
-                ));
-              })}
-            </div>
-          </div>
-        </div>
+        </section>
       )}
-    </aside>
+    </div>
   );
 };
