@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "start": "electron .",
     "electron": "electron .",
-    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\""
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@types/canvas-confetti": "^1.9.0",
@@ -31,10 +32,40 @@
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
     "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
     "oxlint": "^1.88.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
     "wait-on": "^9.5.1"
+  },
+  "build": {
+    "appId": "com.focusdeck.pdf",
+    "productName": "FocusDeck PDF",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FocusDeck PDF"
+    }
   }
 }
