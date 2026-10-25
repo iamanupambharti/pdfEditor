@@ -22,7 +22,9 @@ function createWindow() {
 
   const distPath = path.join(__dirname, '../dist/index.html');
 
-  if (isDev) {
+  if (app.isPackaged) {
+    mainWindow.loadFile(distPath);
+  } else if (isDev) {
     const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
     mainWindow.loadURL(devUrl).catch(() => {
       if (fs.existsSync(distPath)) {
