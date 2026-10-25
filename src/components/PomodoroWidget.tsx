@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, X, Sparkles, Coffee } from 'lucide-react';
 import type { PomodoroState } from '../types/document';
 
 interface PomodoroWidgetProps {
@@ -13,9 +12,7 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
   state,
   onChangeState,
   onClose,
-  theme = 'dark',
 }) => {
-  const isLight = theme === 'light';
   const timerRef = useRef<any>(null);
 
   // Play soft chime notification tone using Web Audio API
@@ -25,17 +22,15 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      osc.frequency.exponentialRampToValueAtTime(1175, audioCtx.currentTime + 0.3); // D6
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.9);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.8);
-    } catch {
-      // Audio autoplay may be prevented
-    }
+      osc.stop(audioCtx.currentTime + 0.9);
+    } catch {}
   };
 
   useEffect(() => {
@@ -83,94 +78,282 @@ export const PomodoroWidget: React.FC<PomodoroWidgetProps> = ({
     }));
   };
 
+  const handleReset = () => {
+    const mins = state.mode === 'study' ? 25 : state.mode === 'shortBreak' ? 5 : 15;
+    onChangeState((prev) => ({
+      ...prev,
+      timeLeft: mins * 60,
+      isRunning: false,
+    }));
+  };
+
+  const handleSkip = () => {
+    const nextMode = state.mode === 'study' ? 'shortBreak' : 'study';
+    const mins = nextMode === 'study' ? 25 : 5;
+    onChangeState((prev) => ({
+      ...prev,
+      mode: nextMode,
+      timeLeft: mins * 60,
+      isRunning: false,
+    }));
+  };
+
+  // SVG Ring Progress Math
+  const totalSeconds = (state.targetMinutes || (state.mode === 'study' ? 25 : 5)) * 60;
+  const circumference = 2 * Math.PI * 76; // ≈ 477.5
+  const progressRatio = Math.max(0, Math.min(1, state.timeLeft / totalSeconds));
+  const dashOffset = circumference * (1 - progressRatio);
+
+  const completedDots = state.sessionsCompleted % 4;
+
   return (
-    <div className={`fixed bottom-16 right-6 z-40 w-72 border rounded-2xl p-4 shadow-2xl backdrop-blur-md select-none transition-colors ${
-      isLight
-        ? 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/60'
-        : 'bg-slate-900/95 border-slate-700/80 text-slate-200'
-    }`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className={`flex items-center gap-1.5 text-xs font-semibold ${isLight ? 'text-amber-700' : 'text-amber-300'}`}>
-          <Sparkles className={`w-4 h-4 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
-          <span>Study Pomodoro</span>
-        </div>
-        <button
+    <div 
+      className="fixed bottom-16 right-6 z-50 select-none animate-in fade-in zoom-in-95 duration-150"
+      style={{
+        position: 'fixed',
+        width: '280px',
+        boxSizing: 'border-box',
+        fontFamily: "'Geist',system-ui,sans-serif",
+        color: '#E8EAF2'
+      }}
+    >
+      <section 
+        aria-label="Pomodoro timer" 
+        style={{
+          position: 'relative',
+          width: '216px',
+          boxSizing: 'border-box',
+          padding: '16px',
+          borderRadius: '24px',
+          background: 'rgba(26,26,29,.95)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255,255,255,.14)',
+          boxShadow: '0 16px 40px rgba(0,0,0,.45)',
+          margin: '0 auto',
+          color: '#F1EFEA'
+        }}
+      >
+        {/* Close Button */}
+        <button 
           onClick={onClose}
-          className={`p-1 rounded transition-colors cursor-pointer ${
-            isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
-          }`}
+          aria-label="Close Pomodoro widget"
+          className="hover:text-white transition-colors"
+          style={{
+            position: 'absolute',
+            right: '12px',
+            top: '12px',
+            background: 'none',
+            border: 0,
+            color: '#A3A09A',
+            cursor: 'pointer',
+            padding: 0
+          }}
         >
-          <X className="w-3.5 h-3.5" />
+          ✕
         </button>
-      </div>
 
-      {/* Mode Tabs */}
-      <div className={`grid grid-cols-3 gap-1 p-1 rounded-xl mb-3 text-[10px] ${
-        isLight ? 'bg-slate-100' : 'bg-slate-950/80'
-      }`}>
-        <button
-          onClick={() => handleSetMode('study')}
-          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
-            state.mode === 'study' ? 'bg-amber-500 text-slate-950 font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-          }`}
+        {/* Mode Selector Tabs */}
+        <div 
+          role="tablist" 
+          aria-label="Timer mode" 
+          style={{
+            display: 'flex',
+            gap: '2px',
+            padding: '3px',
+            borderRadius: '10px',
+            background: '#131315',
+            border: '1px solid rgba(255,255,255,.08)',
+            marginTop: '8px'
+          }}
         >
-          25m Focus
-        </button>
-        <button
-          onClick={() => handleSetMode('shortBreak')}
-          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
-            state.mode === 'shortBreak' ? 'bg-emerald-500 text-slate-950 font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          5m Break
-        </button>
-        <button
-          onClick={() => handleSetMode('longBreak')}
-          className={`py-1 rounded-lg font-medium transition-all cursor-pointer ${
-            state.mode === 'longBreak' ? 'bg-indigo-500 text-white font-semibold shadow' : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          15m Break
-        </button>
-      </div>
-
-      {/* Countdown Display */}
-      <div className="text-center py-2">
-        <div className={`font-mono text-3xl font-extrabold tracking-tight mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-          {formatTime(state.timeLeft)}
+          <button 
+            role="tab" 
+            aria-selected={state.mode === 'study'} 
+            onClick={() => handleSetMode('study')}
+            style={{
+              flex: 1,
+              height: '24px',
+              border: 0,
+              borderRadius: '7px',
+              background: state.mode === 'study' ? 'rgba(241,239,234,.14)' : 'none',
+              color: state.mode === 'study' ? '#F1EFEA' : '#A3A09A',
+              font: "500 11px/1 'Geist',sans-serif",
+              cursor: 'pointer'
+            }}
+          >
+            Study
+          </button>
+          <button 
+            role="tab" 
+            aria-selected={state.mode === 'shortBreak'} 
+            onClick={() => handleSetMode('shortBreak')}
+            style={{
+              flex: 1,
+              height: '24px',
+              border: 0,
+              borderRadius: '7px',
+              background: state.mode === 'shortBreak' ? 'rgba(52,211,153,.18)' : 'none',
+              color: state.mode === 'shortBreak' ? '#6EE7B7' : '#A3A09A',
+              font: "500 11px/1 'Geist',sans-serif",
+              cursor: 'pointer'
+            }}
+          >
+            Short
+          </button>
+          <button 
+            role="tab" 
+            aria-selected={state.mode === 'longBreak'} 
+            onClick={() => handleSetMode('longBreak')}
+            style={{
+              flex: 1,
+              height: '24px',
+              border: 0,
+              borderRadius: '7px',
+              background: state.mode === 'longBreak' ? 'rgba(56,189,248,.18)' : 'none',
+              color: state.mode === 'longBreak' ? '#7DD3FC' : '#A3A09A',
+              font: "500 11px/1 'Geist',sans-serif",
+              cursor: 'pointer'
+            }}
+          >
+            Long
+          </button>
         </div>
-        <div className={`text-[11px] flex items-center justify-center gap-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-          <Coffee className={`w-3.5 h-3.5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
-          <span>{state.sessionsCompleted} Focus Sessions Completed</span>
+
+        {/* 168px Ring Visualizer per ui.md §6 */}
+        <div 
+          style={{
+            position: 'relative',
+            width: '168px',
+            height: '168px',
+            margin: '12px auto 0'
+          }}
+          role="timer" 
+          aria-live="polite" 
+          aria-label={`${formatTime(state.timeLeft)} remaining`}
+        >
+          <svg width="168" height="168" viewBox="0 0 168 168" aria-hidden="true" style={{ position: 'absolute', left: 0, top: 0 }}>
+            <circle cx="84" cy="84" r="76" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="8" />
+            <circle 
+              cx="84" 
+              cy="84" 
+              r="76" 
+              fill="none" 
+              stroke={state.mode === 'study' ? '#F1EFEA' : state.mode === 'shortBreak' ? '#34D399' : '#38BDF8'} 
+              strokeWidth="8" 
+              strokeLinecap="round" 
+              strokeDasharray={circumference} 
+              strokeDashoffset={dashOffset} 
+              transform="rotate(-90 84 84)"
+              style={{ transition: 'stroke-dashoffset 300ms ease' }}
+            />
+          </svg>
+
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ font: "500 36px/1 'Geist Mono',monospace", fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', color: '#F1EFEA' }}>
+              {formatTime(state.timeLeft)}
+            </div>
+            <div style={{ marginTop: '8px', font: "500 10px/1 'Geist',sans-serif", letterSpacing: '.14em', textTransform: 'uppercase', color: state.mode === 'study' ? '#F1EFEA' : '#6EE7B7' }}>
+              {state.mode === 'study' ? 'Focus' : 'Break'}
+            </div>
+            {/* 4 Session Progress Dots */}
+            <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }} aria-label={`Session ${completedDots + 1} of 4`}>
+              <svg width="40" height="6" viewBox="0 0 40 6" aria-hidden="true">
+                {[0, 1, 2, 3].map((dotIdx) => (
+                  <circle 
+                    key={dotIdx}
+                    cx={3 + dotIdx * 11} 
+                    cy="3" 
+                    r="3" 
+                    fill={dotIdx <= completedDots ? '#F1EFEA' : 'rgba(255,255,255,.18)'} 
+                  />
+                ))}
+              </svg>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-2 pt-2">
-        <button
-          onClick={() => onChangeState((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
-          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer ${
-            state.isRunning
-              ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
-          }`}
-        >
-          {state.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-          <span>{state.isRunning ? 'Pause' : 'Start Focus'}</span>
-        </button>
+        {/* Control Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
+          {/* Reset */}
+          <button 
+            onClick={handleReset}
+            aria-label="Reset timer" 
+            style={{
+              width: '32px',
+              height: '32px',
+              padding: 0,
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,.14)',
+              background: 'none',
+              color: '#A3A09A',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
 
-        <button
-          onClick={() => handleSetMode(state.mode)}
-          className={`p-2 rounded-xl transition-colors cursor-pointer ${
-            isLight
-              ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white'
-          }`}
-          title="Reset Timer"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
-      </div>
+          {/* Play/Pause: Bone fill, graphite text per ui.md §6 */}
+          <button 
+            onClick={() => onChangeState((prev) => ({ ...prev, isRunning: !prev.isRunning }))}
+            aria-label={state.isRunning ? 'Pause timer' : 'Start timer'} 
+            style={{
+              width: '40px',
+              height: '40px',
+              padding: 0,
+              borderRadius: '50%',
+              border: 0,
+              background: '#F1EFEA',
+              color: '#151513',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,.3)'
+            }}
+          >
+            {state.isRunning ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M6 4l14 8-14 8z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Skip */}
+          <button 
+            onClick={handleSkip}
+            aria-label="Skip to next phase" 
+            style={{
+              width: '32px',
+              height: '32px',
+              padding: 0,
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,.14)',
+              background: 'none',
+              color: '#98A0B6',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="5 4 15 12 5 20 5 4" />
+              <line x1="19" y1="5" x2="19" y2="19" />
+            </svg>
+          </button>
+        </div>
+      </section>
     </div>
   );
 };
