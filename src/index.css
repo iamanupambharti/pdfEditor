@@ -1,6 +1,26 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
+:root {
+  --s0: #0B0B0D;
+  --s1: #131315;
+  --s2: #1A1A1D;
+  --hover: rgba(255,255,255,.05);
+  --hair: rgba(255,255,255,.08);
+  --hair2: rgba(255,255,255,.14);
+  --tx: #F1EFEA;
+  --mu: #A3A09A;
+  --accent: #F1EFEA;
+  --accent-soft: #DDD8CC;
+  --accent-tint: rgba(241,239,234,.14);
+  --accent-hover: #FFFFFF;
+  --tool-on: #2A2A2E;
+  --rose: #FB7185;
+  --em: #34D399;
+  --am: #F59E0B;
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -66,9 +86,248 @@
   }
 }
 
+/* Typography Helpers */
+.mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+/* Button & Tool Component Utilities from FocusDeck Workspace Specification */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: transparent;
+  color: #F1EFEA;
+  font: 500 13px/1 'Geist', system-ui, sans-serif;
+  letter-spacing: -.005em;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: background-color 150ms cubic-bezier(.22,1,.36,1), border-color 150ms cubic-bezier(.22,1,.36,1), transform 150ms cubic-bezier(.22,1,.36,1), color 150ms cubic-bezier(.22,1,.36,1);
+}
+.btn:hover {
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.14);
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: scale(.98);
+}
+.btn:focus-visible, .tool:focus-visible, .sw:focus-visible, .wc:focus-visible, .zbtn:focus-visible {
+  outline: 2px solid #DDD8CC;
+  outline-offset: 2px;
+}
+.btn[disabled] {
+  opacity: .4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.ic {
+  width: 32px;
+  padding: 0;
+}
+/* Primary button: Bone fill, graphite text #151513, hover white per ui.md §2 & §6 */
+.btn.primary {
+  background: #F1EFEA;
+  border-color: #F1EFEA;
+  color: #151513;
+  font-weight: 500;
+}
+.btn.primary:hover {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #151513;
+}
+.btn.ghost {
+  border-color: transparent;
+}
+.btn.prune {
+  border-color: rgba(251,113,133,.5);
+  background: rgba(251,113,133,.08);
+  color: #FDA4AF;
+}
+.btn.prune:hover {
+  background: rgba(251,113,133,.14);
+  border-color: rgba(251,113,133,.8);
+}
+.btn.restore {
+  background: #047857;
+  border-color: #047857;
+  color: #fff;
+}
+.btn.restore:hover {
+  background: #059669;
+  border-color: #059669;
+}
+.btn.restore-o {
+  border-color: rgba(52,211,153,.4);
+  color: #6EE7B7;
+}
+.btn.restore-o:hover {
+  background: rgba(52,211,153,.1);
+  border-color: rgba(52,211,153,.7);
+}
+.btn.bm-on {
+  color: #F59E0B;
+  border-color: rgba(245,158,11,.45);
+  background: rgba(245,158,11,.1);
+}
+.tool {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #A3A09A;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 150ms cubic-bezier(.22,1,.36,1), color 150ms cubic-bezier(.22,1,.36,1), transform 150ms cubic-bezier(.22,1,.36,1);
+}
+.tool:hover {
+  background: rgba(255,255,255,.06);
+  color: #F1EFEA;
+  transform: translateY(-1px);
+}
+.tool:active {
+  transform: scale(.96);
+}
+/* Active tool pill: --tool-on (#2A2A2E) with 2px bone underline (#F1EFEA) */
+.tool.on {
+  background: #2A2A2E;
+  color: #F1EFEA;
+  box-shadow: inset 0 -2px 0 #F1EFEA;
+}
+.sw {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 150ms cubic-bezier(.22,1,.36,1);
+}
+.sw:hover {
+  transform: translateY(-1px);
+}
+.sep {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,.08);
+  flex: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font: 500 12px/1 'Geist', system-ui, sans-serif;
+}
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: #1A1A1D;
+  color: #A3A09A;
+  font: 500 10px/1 'Geist Mono', monospace;
+}
+.lbl {
+  font: 500 10px/1 'Geist', system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #A3A09A;
+}
+.wc {
+  width: 46px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #A3A09A;
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(.22,1,.36,1), color 150ms cubic-bezier(.22,1,.36,1);
+}
+.wc:hover {
+  background: rgba(255,255,255,.07);
+  color: #F1EFEA;
+}
+.wc.close:hover {
+  background: #E11D48;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(225,29,72,.55);
+}
+.wc:focus-visible {
+  outline: 2px solid #DDD8CC;
+  outline-offset: -2px;
+}
+.seg {
+  width: 10px;
+  height: 13px;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+.seg.keep {
+  background: rgba(241,239,234,.22);
+}
+.seg.pr {
+  background: #FB7185;
+}
+.seg.bm {
+  background: #F59E0B;
+}
+.seg.cur {
+  background: #F1EFEA;
+}
+.pageinput {
+  width: 32px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: #0B0B0D;
+  color: #F1EFEA;
+  text-align: center;
+  font: 500 12px/1 'Geist Mono', monospace;
+  padding: 0;
+}
+.pageinput:focus-visible {
+  outline: 2px solid #DDD8CC;
+  outline-offset: 2px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(17, 21, 31, 0.85);
+  background: rgba(19, 19, 21, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
